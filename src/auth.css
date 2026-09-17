@@ -1,0 +1,77 @@
+/* Desktop reference: 1920 × 1080. The card's center follows the viewport. */
+.auth-app { min-height: 600px; height: 100svh; --chrome-height: clamp(64px, 7.78vh, 84px); }
+.auth-app .page-header, .auth-app .page-footer { height: var(--chrome-height); flex: 0 0 var(--chrome-height); }
+.auth-app .page-header { padding: 0 42px; }
+.auth-app .page-footer { padding: 0; margin-inline: 42px; }
+.auth-main { position: relative; z-index: 1; flex: 1; min-height: 0; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; }
+.auth-composition { position: relative; width: 480px; transform: scale(var(--auth-scale)); transform-origin: center; }
+.auth-composition .brand { position: absolute; width: 100%; bottom: calc(100% + 30px); margin: 0; }
+.auth-composition .brand h1 { font-size: 46px; letter-spacing: 12px; margin: 0 0 9px 12px; }
+.auth-composition .brand-symbol { gap: 20px; margin-bottom: 12px; }
+.auth-composition .brand-symbol > svg { width: 30px; height: 48px; }
+.auth-composition .brand > p { font-size: 10px; letter-spacing: 5px; }
+.auth-composition .login-card { width: 100%; max-width: none; padding: 36px 40px 28px; }
+.auth-composition .account-emblem { height: 72px; width: 72px; margin-bottom: 22px; }
+.auth-composition .login-card h2 { font-size: 32px; margin-bottom: 8px; }
+.auth-composition h2:focus { outline: none; }
+.auth-composition .login-subtitle { font-size: 14px; margin-bottom: 30px; }
+.auth-composition .field-group { margin-bottom: 20px; }
+.auth-composition .field-group label { font-size: 14px; margin-bottom: 10px; }
+.auth-composition .field-group input { height: 54px; font-size: 16px; padding-inline: 16px; }
+.auth-composition .password-field input { padding-right: 50px; }
+.auth-composition .password-toggle { width: 48px; height: 48px; top: 3px; right: 3px; }
+.auth-composition .login-button { min-height: 54px; margin-top: 26px; font-size: 16px; }
+.auth-composition .register-divider { font-size: 12px; margin-top: 26px; }
+.auth-composition .register-link { font-size: 14px; min-height: 36px; }
+.auth-composition .field-error, .auth-composition .field-hint { font-size: 12px; }
+.auth-composition .form-feedback strong, .auth-composition .form-feedback span { font-size: 13px; }
+.auth-tail { position: absolute; top: 100%; width: 100%; text-align: center; }
+.auth-composition .below-card { display: flex; margin: 22px 0 9px; }
+.auth-composition .tagline { display: block; font-size: 17px; }
+
+.auth-composition-registration { width: 900px; }
+.auth-composition-registration .brand { bottom: calc(100% + 28px); }
+.auth-composition-registration .brand-symbol > svg { height: 36px; width: 24px; }
+.auth-composition-registration .brand h1 { font-size: 39px; }
+.auth-composition-registration .brand > p { font-size: 9px; letter-spacing: 4.5px; }
+.auth-composition .registration-card { padding: 30px 42px 22px; }
+.registration-heading { text-align: center; margin-bottom: 24px; }
+.registration-heading .eyebrow { font-size: 9px; letter-spacing: 3px; margin-bottom: 10px; }
+.auth-composition .registration-heading h2 { font-size: 38px; margin-bottom: 7px; }
+.auth-composition .registration-heading .login-subtitle { margin: 0; font-size: 14px; }
+.registration-form { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 34px; }
+.registration-profile { position: relative; border-right: 1px solid #a49b8929; padding: 7px 27px 10px 0; text-align: center; }
+.photo-control { position: relative; margin-bottom: 16px; border-radius: 8px; }
+.photo-control:focus-within { outline: 2px solid var(--accent-bright); outline-offset: 6px; }
+.photo-select { display: flex; flex-direction: column; align-items: center; gap: 17px; color: #d9d3c7; font-size: 13px; line-height: 1.6; cursor: pointer; }
+.photo-select:hover { color: var(--accent-bright); }
+.photo-preview { position: relative; display: grid; place-items: center; width: 136px; height: 136px; border: 1px dashed #8b847660; border-radius: 50%; background: radial-gradient(circle, var(--accent-soft), #15161880 75%); transition: border-color .2s; }
+.photo-select:hover .photo-preview { border-color: var(--accent-bright); }
+.photo-preview::after { content: '+'; position: absolute; bottom: 5px; right: 6px; display: grid; place-items: center; width: 27px; height: 27px; background: #292328; border: 1px solid var(--accent-bright); border-radius: 50%; color: var(--accent-bright); font-size: 18px; line-height: 1; }
+.photo-preview img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.photo-placeholder { width: 80px; height: 80px; color: #aaa49a; }
+.photo-placeholder svg { width: 100%; height: 100%; }
+.photo-remove { border: 0; border-bottom: 1px solid #76685d; background: none; padding: 6px 0; margin-bottom: 13px; color: #bfb8ab; font-size: 12px; }
+.photo-remove:hover { color: var(--accent-bright); }
+.registration-profile h3 { font-size: 14px; font-weight: 500; margin: 18px 0 6px; }
+.profile-hint { font-size: 12px; line-height: 1.8; color: #a29d92; margin: 10px 0; }
+.registration-profile .field-error { text-align: left; }
+.registration-fields { min-width: 0; }
+.auth-composition .registration-fields .field-group { margin-bottom: 16px; }
+.auth-composition .registration-fields input { height: 50px; }
+.auth-composition .registration-fields .password-toggle { height: 44px; width: 44px; }
+.registration-passwords { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.registration-fields .field-hint { color: #a8a195; margin-top: 7px; }
+.field-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.optional-label { color: #aaa398; font-size: 11px; font-weight: 400; }
+.registration-fields textarea { display: block; width: 100%; min-height: 100px; max-height: 145px; resize: vertical; padding: 13px 16px; font: inherit; font-size: 14px; line-height: 1.65; color: #f0ede6; background: #11131560; border: 1px solid #656660; border-radius: 5px; }
+.registration-fields textarea::placeholder { color: #8e8f8b; }
+.registration-fields textarea:focus { outline: 2px solid var(--accent-bright); outline-offset: 3px; border-color: var(--accent-bright); }
+.bio-count { display: block; margin: 6px 0 0; text-align: right; font-size: 11px; color: #969085; }
+.auth-composition .registration-submit { margin-top: 14px; }
+.auth-composition .registration-submit .login-button { margin-top: 12px; }
+.registration-demo-note { font-size: 11px; color: #a9a094; margin: 10px 0 0; text-align: center; line-height: 1.7; }
+.registration-return { display: flex; align-items: center; justify-content: center; gap: 9px; border-top: 1px solid #a49b8929; padding-top: 19px; margin: 24px 0 0; color: #a9a398; font-size: 13px; }
+.registration-return a { display: inline-flex; gap: 7px; align-items: center; color: #ece7df; min-height: 30px; text-underline-offset: 4px; }
+.registration-return a:hover { color: var(--accent-bright); }
+.registration-return svg { width: 15px; height: 15px; }

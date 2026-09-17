@@ -1,0 +1,7 @@
+.campaign-overview { display: grid; gap: 13px; margin: 24px 0; padding: 18px 0; border-block: 1px solid #95837624; text-align: left; }
+.campaign-overview > div { display: flex; justify-content: space-between; gap: 20px; font-size: 12px; line-height: 1.6; }
+.campaign-overview dt { color: #aaa297; }
+.campaign-overview dd { margin: 0; color: #e3dcd2; text-align: right; }
+.campaign-invite-example { display: flex; flex-direction: column; gap: 9px; margin: 21px 0; padding: 17px; border: 1px solid #a6808c36; border-radius: 7px; background: var(--accent-soft); color: #c8bbba; font-size: 12px; line-height: 1.7; text-align: center; }
+.campaign-invite-example > strong { color: var(--accent-bright); font-size: 19px; font-weight: 500; letter-spacing: 5px; }
+.field-group .campaign-invite-input { font-size: 20px; letter-spacing: 7px; text-align: center; }

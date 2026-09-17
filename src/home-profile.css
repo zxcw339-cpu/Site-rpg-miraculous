@@ -1,0 +1,58 @@
+.home-profile { position: relative; display: flex; justify-content: center; }
+.home-profile-trigger { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #77726a; border-radius: 50%; padding: 4px; background: #202125; color: #c9c4b9; }
+.home-profile-trigger:hover, .home-profile-trigger[aria-expanded='true'] { border-color: var(--accent-bright); background: var(--accent-soft); color: #f0e9df; box-shadow: 0 0 22px var(--accent-soft); }
+.home-profile-trigger img, .home-profile-trigger svg { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.home-profile-popover { position: fixed; top: auto; right: auto; margin: 0; width: 320px; max-width: calc(100vw - 32px); max-height: calc(100svh - 36px); overflow: auto; border: 1px solid #625c56; border-radius: 12px; padding: 23px; color: #edeae3; background: radial-gradient(ellipse at 0 0, var(--panel-glow), transparent 70%), #1b1c20; box-shadow: 0 14px 70px #0009, inset 0 1px #ffffff08; }
+.home-profile-popover:popover-open { animation: modal-in .18s ease-out; }
+.home-profile-popover::backdrop { background: transparent; }
+.home-profile-summary { display: flex; align-items: center; gap: 15px; }
+.home-profile-avatar { flex: 0 0 52px; height: 52px; color: #c5beb2; }
+.home-profile-avatar img, .home-profile-avatar svg { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.home-profile-identity { min-width: 0; }
+.home-profile-kicker { color: var(--accent-bright); font-size: 9px; font-weight: 500; letter-spacing: 2px; margin: 0 0 7px; }
+.home-profile-identity h2 { font: 500 26px/1.15 'Cormorant Garamond', Georgia, serif; margin: 0; overflow-wrap: anywhere; }
+.home-profile-bio { margin: 19px 0 22px; color: #c2bdb4; font-size: 12px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.home-profile-bio-empty { color: #a39f97; }
+.home-profile-actions { display: flex; gap: 10px; border-top: 1px solid #ffffff12; padding-top: 17px; }
+.home-profile-actions button { border-radius: 5px; min-height: 40px; font-size: 12px; }
+.home-profile-edit { flex: 1; border: 1px solid #736a62; background: #ffffff04; }
+.home-profile-edit:hover { border-color: var(--accent-bright); background: var(--accent-soft); }
+.home-profile-exit { padding-inline: 15px; border: 1px solid transparent; background: transparent; color: #c7bdb5; }
+.home-profile-exit:hover { background: #ffffff07; color: #f0e6dc; }
+
+.home-profile-modal { width: min(580px, calc(100vw - 48px)); padding: 39px 36px 32px; text-align: left; }
+.home-profile-modal h2 { font-size: 34px; margin-bottom: 10px; }
+.home-profile-note { font-size: 12px; line-height: 1.7; color: #b9b1a7; margin: 0 0 26px; }
+.home-profile-photo-row { display: flex; align-items: center; gap: 23px; margin: 0 0 27px; padding-bottom: 25px; border-bottom: 1px solid #ffffff13; }
+.home-profile-photo-control { flex: 0 0 102px; border-radius: 7px; }
+.home-profile-photo-control:focus-within { outline: 2px solid var(--accent-bright); outline-offset: 6px; }
+.home-profile-photo-select { cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 11px; color: #e5ddd2; font-size: 11px; }
+.home-profile-photo-preview { display: block; width: 84px; height: 84px; padding: 4px; border-radius: 50%; border: 1px solid #736c62; color: #c5bcb0; background: #111216; }
+.home-profile-photo-preview img, .home-profile-photo-preview svg { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.home-profile-photo-select:hover { color: var(--accent-bright); }
+.home-profile-photo-select:hover .home-profile-photo-preview { border-color: var(--accent-bright); }
+.home-profile-photo-info { min-width: 0; }
+.home-profile-photo-info > p:first-child { font-size: 12px; line-height: 1.9; margin: 0 0 5px; color: #d6cdc2; }
+.home-profile-photo-info > p:first-child span { color: #aba398; font-size: 11px; }
+.home-profile-photo-remove { padding: 6px 0; background: transparent; border: 0; font-size: 11px; color: #cfc3b7; text-decoration: underline; text-underline-offset: 4px; }
+.home-profile-photo-remove:hover { color: var(--accent-bright); }
+.home-profile-field { margin: 0 0 21px; }
+.home-profile-field label { display: flex; align-items: center; justify-content: space-between; color: #e0d8ce; font-size: 12px; margin-bottom: 9px; }
+.home-profile-field label > span { font-size: 10px; color: #aaa397; }
+.home-profile-field input, .home-profile-field textarea { width: 100%; display: block; border: 1px solid #68645e; background: #11131580; color: #eee6da; border-radius: 5px; padding: 13px 14px; font: 13px/1.6 'DM Sans', 'Segoe UI', sans-serif; transition: border-color .2s; }
+.home-profile-field input { height: 46px; }
+.home-profile-field textarea { min-height: 116px; max-height: 180px; resize: vertical; }
+.home-profile-field input:hover, .home-profile-field textarea:hover { border-color: #878075; }
+.home-profile-field input:focus, .home-profile-field textarea:focus { border-color: var(--accent-bright); outline: 2px solid var(--accent-bright); outline-offset: 3px; }
+.home-profile-field input[aria-invalid='true'] { border-color: #efb6b2; }
+.home-profile-field textarea::placeholder { color: #9a948b; }
+.home-profile-count { text-align: right; font-size: 10px; color: #a69f94; margin: 8px 0 0; }
+.home-profile-error { color: #efb6b2; font-size: 11px; line-height: 1.6; margin: 8px 0 0; }
+.home-profile-photo-loading { font-size: 11px; color: #b5ad9f; margin: 8px 0 0; }
+.home-profile-form-actions { display: flex; align-items: center; gap: 12px; margin-top: 26px; }
+.home-profile-form-actions button { min-height: 45px; padding: 10px 18px; border-radius: 5px; font-size: 12px; }
+.home-profile-cancel { border: 1px solid #6d665b; background: #ffffff03; }
+.home-profile-cancel:hover { border-color: var(--accent-bright); background: #ffffff08; }
+.home-profile-apply { flex: 1; border: 1px solid #ffffff0b; background: var(--accent); color: var(--button-text); }
+.home-profile-apply:hover { background: var(--accent-hover); box-shadow: 0 5px 24px var(--accent-soft); }
+.home-profile-apply:disabled { cursor: wait; opacity: .55; }
