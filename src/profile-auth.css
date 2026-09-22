@@ -1,0 +1,7 @@
+.home-profile-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+.home-profile-fields:disabled { opacity: .7; }
+.home-profile-fields:disabled .home-profile-photo-select { cursor: wait; }
+.home-profile-field-hint { font-size: 11px; line-height: 1.7; color: #b9b1a7; margin: 8px 0 0; }
+.home-profile-username { color: #c0b4ae; font-size: 11px; overflow-wrap: anywhere; margin: 7px 0 0; }
+.home-profile-saved { position: fixed; bottom: 28px; left: 96px; z-index: 10; width: max-content; max-width: min(390px, calc(100vw - 120px)); margin: 0; padding: 13px 17px; border: 1px solid #736a62; border-radius: 7px; color: #edeae3; background: #222126; box-shadow: 0 8px 32px #0006; font-size: 12px; line-height: 1.7; }
+.home-profile-saving .modal-close { opacity: .5; cursor: wait; }

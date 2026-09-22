@@ -1,8 +1,8 @@
 # Publicar a prévia
 
-O site já pode ser compartilhado como demonstração. Login, cadastro, campanhas e fichas continuam temporários: publicar não cria autenticação nem salva os dados dos visitantes.
+O site pode ser compartilhado como demonstração. Para ativar contas reais, conclua AUTENTICACAO.md antes de publicar esta atualização. Fichas e campanhas continuam temporárias.
 
-O caminho preparado é GitHub para guardar o projeto e GitHub Pages para servir o site. Supabase fica responsável por contas e banco quando essa integração for desenvolvida. Seus domínios não são uma solução de hospedagem da interface React. [Documentação do Supabase](https://supabase.com/docs/guides/platform/custom-domains).
+O caminho preparado é GitHub para guardar o projeto e GitHub Pages para servir o site. Supabase fica responsável pelas contas e perfis depois de configurado. Seus domínios não são uma solução de hospedagem da interface React. [Documentação do Supabase](https://supabase.com/docs/guides/platform/custom-domains).
 
 ## 1. Enviar o projeto ao GitHub
 
@@ -25,20 +25,12 @@ O `.gitignore` já exclui `node_modules`, `dist`, arquivos `.env`, cache e a pas
 5. Em **Settings → Pages**, clique em **Visit site**. O endereço terá o formato `https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/`. Use o link mostrado pelo GitHub, incluindo a barra final.
 6. Confira login, fichas, campanhas e fontes nesse endereço. Compartilhe o link explicando que é uma prévia com dados fictícios.
 
-O fluxo `.github/workflows/deploy-pages.yml` já está pronto: instala as dependências, testa a regra das fichas, compila e publica apenas `dist`. O Vite usa caminhos relativos, compatíveis com a subpasta do repositório. Não são necessários tokens pessoais ou chaves do Supabase nesta versão. [Publicação com Vite](https://vite.dev/guide/static-deploy.html#github-pages), [caminhos relativos](https://vite.dev/guide/build.html#relative-base).
+O fluxo `.github/workflows/deploy-pages.yml` já está pronto: instala as dependências, testa a regra das fichas, compila e publica apenas `dist`. O Vite usa caminhos relativos, compatíveis com a subpasta do repositório. A demonstração não precisa de chaves. Para contas reais, configure as variáveis públicas indicadas em AUTENTICACAO.md. [Publicação com Vite](https://vite.dev/guide/static-deploy.html#github-pages), [caminhos relativos](https://vite.dev/guide/build.html#relative-base).
 
 Para atualizar depois: faça as alterações, use **Commit to main → Push origin** no Desktop. O envio à `main` dispara uma nova publicação automaticamente.
 
-## 3. Onde entra o Supabase
+## 3. Ativar as contas
 
-Esta etapa é para quando formos desenvolver contas e dados persistentes. Ela não é necessária para publicar a prévia de hoje.
+O código agora inclui contas e perfis com Supabase. Siga [AUTENTICACAO.md](AUTENTICACAO.md) para aplicar o SQL no projeto existente, publicar a função de login por nome e configurar e-mail/Discord e variáveis públicas do GitHub. O SQL ainda não foi aplicado ao banco hospedado nesta preparação.
 
-1. Acesse o [painel do Supabase](https://supabase.com/dashboard) e abra o projeto existente. Antes de conectar, precisamos examinar suas tabelas e integrações atuais para preservá-las. Não exclua ou recrie esse projeto.
-2. Para a integração futura, localize a URL do projeto e a chave **publishable** pelo botão **Connect**. Chaves **secret/service_role** e a senha do banco nunca entram no código público. [Chaves do Supabase](https://supabase.com/docs/guides/getting-started/api-keys).
-3. Depois de implementar o login real, configure o endereço publicado em **Authentication → URL Configuration → Site URL** e cadastre os retornos permitidos em **Redirect URLs**. Somente preencher essas configurações não conecta o protótipo. [URLs de autenticação](https://supabase.com/docs/guides/auth/redirect-urls).
-4. Desenvolveremos as tabelas e permissões de perfis, campanhas, participantes e fichas. A restrição “jogador pode vincular sua ficha; mestre cria NPCs/vilões em outra área” também precisa ser aplicada no banco, com políticas de acesso (RLS), antes de receber dados reais. [Orientações de produção](https://supabase.com/docs/guides/deployment/going-into-prod).
-5. Após conectar e testar contas distintas, publicaremos a nova versão pelo mesmo fluxo do GitHub. Até lá, o site continua demonstrativo.
-
-O plano gratuito do Supabase pode pausar projetos com pouca atividade em um período de sete dias. A prévia estática atual no Pages não depende do Supabase e não é afetada por essa pausa. [Disponibilidade do Supabase](https://supabase.com/docs/guides/deployment/going-into-prod#availability).
-
-O repositório remoto foi criado pelo usuário. Em 17/09/2026, o Git local foi corrigido para apontar à pasta que contém o site, mantendo o histórico e o endereço remoto. O README inicial da subpasta está preservado em `.preview/repository-setup-backup-20260917/`. Nenhum commit, push ou publicação externa foi executado automaticamente nesta correção.
+Fichas, campanhas e convites continuam temporários. Não exclua nem recrie seu projeto Supabase. No plano gratuito, projetos podem ser pausados por inatividade; o site estático permanece hospedado no Pages, mas o login depende do Supabase estar disponível.

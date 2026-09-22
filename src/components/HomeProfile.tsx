@@ -3,11 +3,13 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { UserIcon } from './Icons'
 import { Modal } from './Modal'
 import '../home-profile.css'
+import '../profile-auth.css'
 
 export interface HomeProfileData {
   name: string
   bio: string
   photoUrl?: string
+  username?: string | null
 }
 
 export interface HomeProfileChanges {
@@ -15,18 +17,21 @@ export interface HomeProfileChanges {
   bio: string
   photo?: File
   removePhoto?: boolean
+  username?: string
 }
 
 interface HomeProfileProps {
   profile: HomeProfileData
-  onUpdate: (changes: HomeProfileChanges) => void
+  onUpdate: (changes: HomeProfileChanges) => void | Promise<void>
   onExit: () => void
+  authenticated?: boolean
 }
 
 const photoTypes = new Set(['image/png', 'image/jpeg', 'image/webp'])
 const photoLimit = 5 * 1024 * 1024
+const usernamePattern = /^[a-z0-9][a-z0-9_.-]{2,31}$/
 
-export function HomeProfile({ profile, onUpdate, onExit }: HomeProfileProps) {
+export function HomeProfile({ profile, onUpdate, onExit, authenticated = false }: HomeProfileProps) {
   const id = useId()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLElement>(null)
@@ -87,6 +92,7 @@ export function HomeProfile({ profile, onUpdate, onExit }: HomeProfileProps) {
         <div className="home-profile-identity">
           <p className="home-profile-kicker">SEU PERFIL</p>
           <h2 id={`${id}-name`}>{profile.name}</h2>
+          {authenticated && profile.username && <p className="home-profile-username">@{profile.username}</p>}
         </div>
       </div>
       <p className={`home-profile-bio${profile.bio.trim() ? '' : ' home-profile-bio-empty'}`}>
@@ -106,30 +112,37 @@ export function HomeProfile({ profile, onUpdate, onExit }: HomeProfileProps) {
       </div>
     </section>
 
-    <span className="sr-only" role="status">{notice}</span>
-    {editing && <ProfileEditor profile={profile} onClose={closeEditor} onApply={changes => {
-      onUpdate(changes)
-      setNotice('Perfil atualizado nesta prévia. As alterações são temporárias.')
+    {notice && <p className="home-profile-saved" role="status">{notice}</p>}
+    {editing && <ProfileEditor profile={profile} authenticated={authenticated} onClose={closeEditor} onApply={async changes => {
+      await onUpdate(changes)
+      setNotice(authenticated ? 'Perfil salvo na sua conta.' : 'Perfil atualizado nesta prévia. As alterações são temporárias.')
       closeEditor()
     }} />}
   </div>
 }
 
-function ProfileEditor({ profile, onClose, onApply }: {
+function ProfileEditor({ profile, authenticated, onClose, onApply }: {
   profile: HomeProfileData
+  authenticated: boolean
   onClose: () => void
-  onApply: (changes: HomeProfileChanges) => void
+  onApply: (changes: HomeProfileChanges) => Promise<void>
 }) {
   const id = useId()
   const [name, setName] = useState(profile.name)
+  const [username, setUsername] = useState(profile.username || '')
   const [bio, setBio] = useState(profile.bio)
   const [nameError, setNameError] = useState('')
+  const [usernameError, setUsernameError] = useState('')
+  const [saveError, setSaveError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
   const [photoError, setPhotoError] = useState('')
   const [newPhoto, setNewPhoto] = useState<File>()
   const [photoUrl, setPhotoUrl] = useState('')
   const [loadingPhoto, setLoadingPhoto] = useState(false)
   const [removePhoto, setRemovePhoto] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
+  const usernameRef = useRef<HTMLInputElement>(null)
   const photoRef = useRef<HTMLInputElement>(null)
   const previewUrl = photoUrl || (removePhoto ? undefined : profile.photoUrl)
 
@@ -171,26 +184,44 @@ function ProfileEditor({ profile, onClose, onApply }: {
     photoRef.current?.focus()
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (savingRef.current) return
+    setSaveError('')
     if (!name.trim()) {
       setNameError('Digite o nome que você quer usar.')
       nameRef.current?.focus()
+      return
+    }
+    const normalizedUsername = username.trim().toLowerCase()
+    if (authenticated && normalizedUsername && !usernamePattern.test(normalizedUsername)) {
+      setUsernameError('Use de 3 a 32 caracteres: letras sem acento, números, ponto, hífen ou sublinhado. Comece com uma letra ou número.')
+      usernameRef.current?.focus()
       return
     }
     if (photoError || loadingPhoto) {
       photoRef.current?.focus()
       return
     }
-    onApply({ name: name.trim(), bio: bio.trim(), photo: newPhoto, removePhoto })
+    savingRef.current = true
+    setSaving(true)
+    try {
+      await onApply({ name: name.trim(), bio: bio.trim(), photo: newPhoto, removePhoto, ...(authenticated ? { username: normalizedUsername } : {}) })
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Não foi possível salvar o perfil. Tente novamente.')
+    } finally {
+      savingRef.current = false
+      setSaving(false)
+    }
   }
 
-  return <Modal open onClose={onClose} titleId={`${id}-title`} descriptionId={`${id}-note`} className="home-profile-modal">
+  return <Modal open onClose={() => { if (!savingRef.current) onClose() }} titleId={`${id}-title`} descriptionId={`${id}-note`} className={`home-profile-modal${saving ? ' home-profile-saving' : ''}`}>
     <p className="home-profile-kicker">DO SEU JEITO</p>
     <h2 id={`${id}-title`}>Editar perfil</h2>
-    <p className="home-profile-note" id={`${id}-note`}>Alterações temporárias. Nada será salvo ao recarregar.</p>
+    <p className="home-profile-note" id={`${id}-note`}>{authenticated ? 'Seu nome, sua foto e sua biografia ficam salvos na sua conta.' : 'Alterações temporárias. Nada será salvo ao recarregar.'}</p>
 
-    <form className="home-profile-form" onSubmit={submit} noValidate autoComplete="off">
+    <form className="home-profile-form" onSubmit={submit} noValidate autoComplete="off" aria-busy={saving}>
+      <fieldset className="home-profile-fields" disabled={saving}>
       <div className="home-profile-photo-row">
         <div className="home-profile-photo-control">
           <input
@@ -226,13 +257,23 @@ function ProfileEditor({ profile, onClose, onApply }: {
       </div>
 
       <div className="home-profile-field">
-        <label htmlFor={`${id}-name`}>Nome</label>
+        <label htmlFor={`${id}-name`}>{authenticated ? 'Nome de exibição' : 'Nome'}</label>
         <input ref={nameRef} id={`${id}-name`} type="text" required maxLength={80} value={name} aria-invalid={Boolean(nameError)} aria-describedby={nameError ? `${id}-name-error` : undefined} onChange={event => {
           setName(event.target.value.slice(0, 80))
           setNameError('')
         }} />
         {nameError && <p id={`${id}-name-error`} className="home-profile-error">{nameError}</p>}
       </div>
+
+      {authenticated && <div className="home-profile-field">
+        <label htmlFor={`${id}-username`}>Nome de usuário <span>Opcional</span></label>
+        <input ref={usernameRef} id={`${id}-username`} type="text" maxLength={32} autoCapitalize="none" autoCorrect="off" spellCheck={false} value={username} aria-invalid={Boolean(usernameError)} aria-describedby={`${id}-username-hint${usernameError ? ` ${id}-username-error` : ''}`} onChange={event => {
+          setUsername(event.target.value.toLowerCase())
+          setUsernameError('')
+        }} />
+        <p className="home-profile-field-hint" id={`${id}-username-hint`}>É único e serve para entrar com senha. Se entrou pelo Discord, pode continuar usando-o; o acesso por nome também exige uma senha definida na conta.</p>
+        {usernameError && <p id={`${id}-username-error`} className="home-profile-error">{usernameError}</p>}
+      </div>}
 
       <div className="home-profile-field">
         <label htmlFor={`${id}-bio`}>Sobre mim <span>Opcional</span></label>
@@ -242,8 +283,11 @@ function ProfileEditor({ profile, onClose, onApply }: {
 
       <div className="home-profile-form-actions">
         <button className="home-profile-cancel" type="button" onClick={onClose}>Cancelar</button>
-        <button className="home-profile-apply" type="submit" disabled={loadingPhoto}>Aplicar à prévia</button>
+        <button className="home-profile-apply" type="submit" disabled={loadingPhoto || saving}>{saving ? 'Salvando…' : authenticated ? 'Salvar perfil' : 'Aplicar à prévia'}</button>
       </div>
+      </fieldset>
+      {saving && <p className="home-profile-field-hint" role="status">Salvando as alterações…</p>}
+      {saveError && <p className="home-profile-error" role="alert">{saveError}</p>}
     </form>
   </Modal>
 }

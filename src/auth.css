@@ -75,3 +75,23 @@
 .registration-return a { display: inline-flex; gap: 7px; align-items: center; color: #ece7df; min-height: 30px; text-underline-offset: 4px; }
 .registration-return a:hover { color: var(--accent-bright); }
 .registration-return svg { width: 15px; height: 15px; }
+
+.auth-forgot-link { display: block; width: fit-content; margin: -6px 0 0 auto; color: #c9c0b5; font-size: 12px; text-underline-offset: 4px; }
+.auth-forgot-link:hover { color: var(--accent-bright); }
+.auth-feedback { padding: 12px 14px; border: 1px solid #a99b8950; border-radius: 6px; margin: 0 0 18px; color: #ddd4c7; background: #a99b8909; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.auth-feedback-error { color: #f0b7ba; border-color: #b869755e; background: #893b4812; }
+.auth-feedback-success { color: #e8dfd0; border-color: #c0a37f80; background: #c0a37f0c; }
+.auth-composition .login-button:disabled, .discord-button:disabled { opacity: .5; cursor: not-allowed; filter: none; transform: none; }
+.auth-alternative { display: flex; align-items: center; gap: 14px; margin: 17px 0; color: #a69e93; font-size: 11px; }
+.auth-alternative::before, .auth-alternative::after { content: ''; height: 1px; flex: 1; background: #a99b8929; }
+.discord-button { display: flex; width: 100%; align-items: center; justify-content: center; gap: 11px; min-height: 48px; padding: 10px 15px; border: 1px solid #9c8b7959; border-radius: 6px; background: #ddd1c505; color: #e3dcd1; font: inherit; font-size: 14px; transition: border-color .2s, background .2s; }
+.discord-button:not(:disabled):hover { background: var(--accent-soft); border-color: var(--accent-bright); }
+.discord-button svg { width: 23px; height: 23px; }
+.auth-provider-note { margin: 8px 0 0; color: #aca294; text-align: center; font-size: 11px; line-height: 1.6; }
+.registration-avatar-placeholder { display: grid; place-items: center; width: 136px; height: 136px; margin: 27px auto 20px; border: 1px solid #8b847640; border-radius: 50%; background: radial-gradient(circle, var(--accent-soft), #15161880 75%); }
+.registration-avatar-placeholder svg { width: 82px; height: 82px; color: #aaa49a; }
+.registration-fields textarea { min-height: 75px; max-height: 105px; }
+.registration-submit .auth-alternative { margin: 12px 0; }
+.registration-submit .discord-button { min-height: 44px; }
+.password-recovery-result .register-link { gap: 10px; }
+.password-recovery-result .register-link svg { width: 20px; height: 20px; }

@@ -29,6 +29,10 @@ jobs:
         run: npm test
       - name: Gerar o site
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_DISCORD_ENABLED: ${{ vars.VITE_DISCORD_ENABLED }}
       - name: Preparar Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - name: Enviar arquivos compilados

@@ -1,96 +1,65 @@
 # Miraculous · Painel de campanhas
 
-Protótipo navegável das telas de login, cadastro, boas-vindas, início e dos hubs de fichas e campanhas do Fluxograma V1. A composição atual prioriza o uso em PC, com referência de 1920 × 1080 e conteúdo que se ajusta à janela. A adaptação específica para celulares ficou para uma próxima etapa.
+Site React + TypeScript + Vite, com login, cadastro, boas-vindas, início e hubs de fichas/campanhas. Visual Aranha em grafite e vinho, fios independentes com brilho e composição para PC com referência 1920 × 1080. A adaptação específica para celular está adiada.
 
-A pasta estava vazia quando a implementação começou. Nenhum projeto, banco de dados ou serviço externo foi migrado ou removido.
+## Contas e banco
 
-## Executar
+A integração Supabase está implementada no código. A ativação no projeto hospedado e no Discord segue [AUTENTICACAO.md](AUTENTICACAO.md). Nada foi aplicado ao banco remoto nesta preparação.
 
-Requer Node.js 20.19+ ou 22.12+ (validado com Node 24.18.0).
+- Login por nome de usuário ou e-mail e senha, sem Google; Discord opcional, habilitado por configuração.
+- Cadastro com nome de exibição, nome de usuário único, e-mail, senha/confirmar senha e bio opcional.
+- Confirmação de e-mail, recuperação/troca de senha, sessão e saída pelo Supabase Auth.
+- Perfis persistentes com nome, nome de usuário e bio; fotos em bucket privado, PNG/JPEG/WebP até 5 MB, adicionadas depois de entrar.
+- SQL com acesso somente ao próprio perfil/foto; e-mails e senhas não entram na tabela de perfis.
+- Login por nome via Edge Function, consulta privada e limitação persistente de tentativas. Nenhum catálogo público de e-mails.
+- Callback PKCE compatível com a subpasta do Pages. Sessão e comprovante temporário PKCE em localStorage, sincronizados entre abas pelo SDK; use Sair para encerrar o acesso neste navegador. Nenhuma senha armazenada pelo aplicativo.
+- Tema em localStorage (miraculous.theme). Sem configuração pública válida, os botões reais ficam desabilitados; há um botão explícito para explorar a demonstração.
+
+## O que continua demonstrativo
+
+Fichas, campanhas e convites ficam em memória, mesmo quando uma conta real está conectada. O rodapé e os formulários informam isso. Recarregar ou sair descarta as alterações dos hubs. Exemplos neutros não definem lore.
+
+Fichas têm busca e linhas Não vinculadas, Vinculadas a campanhas e Todas. Fichas pessoais só podem se vincular a campanhas em que o usuário é jogador. Mesas em que ele é mestre ficam fora dos seletores; NPCs/vilões pertencerão ao futuro hub do mestre.
+
+Campanhas têm busca e linhas Jogando, Mestrando e Todas, criação temporária e convite demonstrativo 123456. Não há convites reais, editor completo de personagem ou painéis de mestre/jogador. Os blocos compactos do futuro painel do mestre serão atalhos para áreas completas.
+
+## Executar e conferir
+
+Requer Node.js 22.12+; use Node 24 para os testes TypeScript nativos (validado com 24.18.0).
 
 ```sh
 npm ci
 npm run dev
+npm test
+npm run build
 ```
 
-Acesse [a prévia local](http://127.0.0.1:5173/). Também é possível abrir diretamente [o login](http://127.0.0.1:5173/#login), [o cadastro](http://127.0.0.1:5173/#cadastro), [as boas-vindas](http://127.0.0.1:5173/#boas-vindas), [o início](http://127.0.0.1:5173/#inicio), [as fichas](http://127.0.0.1:5173/#fichas) ou [as campanhas](http://127.0.0.1:5173/#campanhas). O acesso direto às áreas da prévia usa o perfil “Visitante”. A prévia depende de o servidor permanecer em execução.
+Abra [a prévia local](http://127.0.0.1:5173/). Para integrar seu Supabase localmente, preencha .env.local conforme .env.example e reinicie a prévia. Nunca coloque uma chave administrativa em VITE_*.
+
+Rotas: #login, #cadastro, #recuperar-senha, #nova-senha, #boas-vindas, #inicio, #fichas e #campanhas. As quatro últimas exigem sessão real ou entrada explícita no modo de demonstração. A autorização real dos dados é aplicada pelo banco.
+
+npm test verifica validações, configurações públicas, comportamento da função de login e regra das fichas. O teste SQL isolado adicional roda sem tocar no Supabase:
 
 ```sh
-npm run build
-npm run preview
+npm install --prefix .preview/backend-check --no-save --ignore-scripts @electric-sql/pglite
+node tests/backend-sql.integration.mjs .preview/backend-check/node_modules/@electric-sql/pglite/dist/index.js
 ```
 
-O build verifica os tipos e gera a pasta `dist`. Não há backend.
+Esse teste usa PostgreSQL/WASM com estruturas de Auth/Storage simuladas. Verificações e limitações reais estão em [VERIFICACOES.md](VERIFICACOES.md).
 
-O passo a passo para publicar a prévia está em [PUBLICAR.md](PUBLICAR.md). O fluxo de GitHub Pages já está preparado, e os arquivos compilados usam caminhos relativos para funcionar na subpasta do repositório. Nada foi publicado externamente nesta preparação.
+## Publicação
 
-Com Node.js 24, `npm test` executa as verificações da regra de vínculo das fichas, sem dependências extras.
+GitHub Pages com caminhos relativos e fluxo de compilação/testes. [PUBLICAR.md](PUBLICAR.md) explica o envio pelo Desktop. [AUTENTICACAO.md](AUTENTICACAO.md) explica SQL, função, e-mail, Discord e variáveis do GitHub. A versão hospedada não exige PC ligado.
 
-## O que funciona
+## Organização
 
-- Login com nome e senha, validação de campos vazios, foco no primeiro erro e opção de mostrar/ocultar senha.
-- Navegação entre login (`#login`), cadastro (`#cadastro`), boas-vindas (`#boas-vindas`), início (`#inicio`), fichas (`#fichas`) e campanhas (`#campanhas`), incluindo o histórico do navegador.
-- Cadastro com nome de quem joga, senha e confirmação obrigatórios. As duas senhas têm controles independentes de mostrar/ocultar; a confirmação precisa ser igual à senha.
-- Foto de perfil opcional com prévia local, troca e remoção. São aceitas imagens PNG, JPEG ou WebP de até 5 MB; arquivos incompatíveis ou que não podem ser abertos recebem um aviso.
-- Biografia opcional em “Sobre mim”, com limite e contador de 300 caracteres.
-- Envio por botão ou Enter com aviso explícito de demonstração. Um envio válido de login ou cadastro abre diretamente as boas-vindas e descarta as senhas; nenhuma conta ou sessão é criada. A disponibilidade de nomes e a rejeição de nomes duplicados dependem de um backend futuro.
-- Boas-vindas simples com “Bem-vindo(a)”, nome, foto circular ou ícone de usuário, Entrar e Sair. Entrar abre a página inicial; Sair retorna ao login.
-- [Página inicial](http://127.0.0.1:5173/#inicio) com saudação e símbolo provisório central. Início, Fichas e Campanhas compartilham o menu lateral recolhível e o perfil no canto inferior; a navegação indica a área atual e mantém o menu aberto ou recolhido ao trocar de hub.
-- [Hub de fichas](http://127.0.0.1:5173/#fichas) com as linhas “Não vinculadas”, “Vinculadas a campanhas” e “Todas as fichas”, contadores, busca por nome da ficha ou campanha e estados sem resultados.
-- Nova ficha abre um formulário de nome e campanha opcional, mostrando apenas campanhas em que você é jogador. A regra também é conferida ao atualizar os dados. Fichas pessoais não podem ser vinculadas a mesas em que você é mestre; NPCs e vilões serão criados pelo futuro hub do mestre. Vincular ou desvincular reorganiza as linhas; vínculos com campanhas ausentes ou de mestre aparecem como não vinculados. O editor completo de personagem ainda não faz parte desta etapa.
-- [Hub de campanhas](http://127.0.0.1:5173/#campanhas) com as linhas “Jogando”, “Mestrando” e “Todas as campanhas”, contadores e busca por nome. Os cartões abrem uma visão geral com o papel do usuário e um atalho para as fichas.
-- Criar campanha adiciona um cartão temporário a “Mestrando”. Entrar por convite usa exclusivamente o código demonstrativo **123456**, de seis dígitos, para adicionar uma campanha de exemplo a “Jogando”. Outros códigos recebem um aviso; repetir a demonstração não duplica a campanha. Nenhum convite real é gerado ou validado.
-- Os hubs começam com exemplos neutros identificados nos cartões, sem personagens ou lore inventados. Cada linha pode ser percorrida horizontalmente quando houver mais cartões; o conteúdo do hub tem rolagem vertical quando necessário.
-- O perfil abre um painel compacto com nome, foto e biografia. Editar perfil abre um formulário completo para alterar esses dados apenas na prévia; Cancelar descarta o rascunho. A foto tem os mesmos formatos e limite do cadastro, com carregamento verificado antes da aplicação.
-- O login passa somente o nome. O cadastro passa nome, biografia e foto opcional, mantidos em memória durante a navegação entre boas-vindas, início e hubs. Fichas, campanhas e vínculos da prévia também permanecem em memória durante essa navegação. As senhas são descartadas.
-- Sair, retornar a login/cadastro ou recarregar a página descarta o perfil e as alterações temporárias dos hubs, restaurando os exemplos iniciais. O acesso direto às telas mostra “Visitante”. As fotos não são enviadas à rede; suas URLs temporárias são liberadas quando deixam de ser usadas.
-- Aparência abre a caixa com somente **Aranha**, em grafite, prata e detalhes em vinho, com símbolo provisório. As antigas opções Prata e Esmeralda foram retiradas do menu; os demais espaços continuam reservados.
-- Somente a preferência de tema persiste em `localStorage`, na chave `miraculous.theme`. Não há cookies, gravação de dados de cadastro ou envio de formulários à rede.
-- O seletor de aparência e os formulários dos hubs usam o elemento nativo `dialog`. Escape fecha o diálogo e devolve o foco ao controle que o abriu; se o cartão mudar de grupo, o foco volta ao título do hub.
-- Composição escalável para PC, tomando 1920 × 1080 como referência: login, cadastro e boas-vindas ficam centralizados; início e hubs usam uma área ampla com menu lateral. O refinamento para mobile está adiado.
-- Fontes locais, arte vetorial própria e respeito à preferência de movimento reduzido.
+- src/auth: cliente Supabase, validações, serviço e estado da conta.
+- supabase/migrations: SQL aditivo de perfis, acesso, fotos e limite de tentativas.
+- supabase/functions/login-with-username: função hospedada para login por nome.
+- src/App.tsx: navegação, tema e dados temporários dos hubs.
+- src/components: telas, perfil, formulários, diálogos e ornamentos.
+- src/hub-data.ts: exemplos e regra das fichas pessoais.
+- src/themes/themes.ts: arquitetura para 18 espaços; somente Aranha disponível, símbolo/paleta provisórios. preview-wine preservado por compatibilidade.
+- public/fonts: fontes locais e licenças SIL Open Font License.
 
-Use apenas dados fictícios nesta versão.
-
-## Temas e estrutura
-
-- `src/App.tsx`: navegação entre as seis áreas, perfil e dados temporários dos hubs, tema, foco e escala da composição para PC.
-- `src/components/LoginForm.tsx`: campos, validação e envio demonstrativo do login.
-- `src/components/RegistrationForm.tsx`: campos de cadastro, prévia da foto, validação e envio demonstrativo.
-- `src/components/WelcomeScreen.tsx`: saudação, nome e foto temporários, entrada no início e saída para o login.
-- `src/components/HomeScreen.tsx` e `src/home.css`: página inicial e estrutura compartilhada (`WorkspaceShell`) com menu lateral e perfil para início e hubs.
-- `src/components/SheetsHub.tsx`: busca, agrupamento, criação temporária e alteração dos vínculos de fichas.
-- `src/components/CampaignHub.tsx` e `src/campaign-hub.css`: busca, agrupamento, criação temporária, visão geral e demonstração de convite de campanhas.
-- `src/components/HubParts.tsx` e `src/hubs.css`: cabeçalho, busca, botões, linhas com rolagem, cartões e apresentação compartilhada dos hubs.
-- `src/hub-data.ts`: tipos de fichas e campanhas, exemplos iniciais e busca sem distinção de maiúsculas ou acentos.
-- `src/components/HomeProfile.tsx` e `src/home-profile.css`: perfil compacto e edição temporária de nome, foto e biografia.
-- `src/components/Modal.tsx`: comportamento compartilhado dos diálogos.
-- `src/components/ThemePicker.tsx`: seletor por símbolos.
-- `src/themes/themes.ts`: paletas, catálogo e 18 espaços reservados, de `miraculous-01` até `miraculous-18`.
-- `src/components/Icons.tsx`: ícones de interface e símbolos provisórios, incluindo Aranha.
-- `src/components/Atmosphere.tsx`: arcos, colunas e ornamentos decorativos.
-- `src/components/WebFrame.tsx`: fios independentes nos quatro cantos, reflexos animados e cristais/estrelas pendurados. Os cantos se adaptam à largura da tela e as animações respeitam movimento reduzido.
-- `src/styles.css`: estilos compartilhados, cores por variáveis, fios e ornamentos.
-- `src/auth.css`: composição centralizada de login e cadastro, escala para PC e apresentação dos campos de cadastro.
-- `src/welcome.css`: apresentação das boas-vindas, foto circular, nomes longos e botões.
-- `public/fonts`: fontes e suas licenças SIL Open Font License.
-
-O estudo inicial tinha as variações Vinho, Prata e Esmeralda. A aparência atual concentra o desenvolvimento em Aranha, conforme a orientação do usuário, mantendo a paleta vinho já aprovada. Seu símbolo e sua paleta continuam provisórios; não definem lore. O identificador interno `preview-wine` foi preservado para compatibilidade com a preferência anterior.
-
-A arquitetura dos 18 espaços permanece preparada. As definições oficiais podem ficar em arquivos individuais dentro de `src/themes` e ser importadas para `miraculousThemes`. O seletor e `getTheme` consomem o mesmo catálogo derivado dos espaços. Uma definição substitui o estudo provisório do respectivo espaço. Símbolos definitivos devem ser acrescentados a `ThemeSymbol` e ao componente de símbolos quando forem fornecidos.
-
-As variáveis de cada tema controlam botão, foco, brilho, fundo ambiente e ornamentos. A estrutura de navegação não muda. Se a preferência estiver indisponível, tiver um identificador antigo de Prata/Esmeralda ou não existir no catálogo, o protótipo usa Aranha. Se o navegador bloquear a gravação, a aparência continua na página e o seletor informa a limitação.
-
-## Fora desta entrega
-
-Autenticação real, criação de contas, verificação de nomes duplicados, upload e persistência de fotos, perfis salvos, persistência de fichas/campanhas, convites reais, editor completo de ficha e painéis de mestre/jogador. Os hubs disponíveis organizam somente os dados temporários da demonstração. A experiência específica para mobile também ficou para uma próxima etapa.
-
-Supabase continua como uma possibilidade sem integração ou decisão de banco nesta fase. Os blocos compactos do futuro painel do mestre serão atalhos para áreas completas, conforme a orientação do usuário.
-
-## Referências
-
-- Fluxograma V1 e imagem visual fornecidos pelo usuário.
-- PDF de pesquisa tratado como contexto técnico, não como autorização para ampliar o escopo.
-- [Documentação do React](https://react.dev/versions) e [compatibilidade do Vite](https://vite.dev/guide/). Versões estáveis consultadas no registro npm em 14/09/2026 e fixadas com `package-lock.json`: React 19.3.0, Vite 8.3.0, TypeScript 7.0.2, plugin React 6.1.1.
-
-As verificações executadas estão em `VERIFICACOES.md`.
+React 19.3.0, Vite 8.3.0, TypeScript 7.0.2, plugin React 6.1.1 e Supabase JS 2.116.0, fixados no lockfile. O SDK oficial do Supabase é a única nova dependência de execução nesta etapa.

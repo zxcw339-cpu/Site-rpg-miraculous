@@ -1,5 +1,28 @@
 # Verificações do protótipo
 
+## Publicação da função de login por nome — 22/09/2026
+
+- CLI autenticada pelo usuário. Projeto identificado: MiraculousRPGDB, `teizrbsaocefxhtaqpxj`, ativo.
+- Configurações públicas de Auth consultadas: e-mail e Discord habilitados, cadastro habilitado e confirmação de e-mail exigida. Isso não verifica o envio por SMTP nem o callback completo do Discord.
+- Endpoint de perfis existe e negou consulta anônima com HTTP 401 / permission denied, conforme esperado. Nenhum SQL remoto aplicado por esta etapa.
+- Configurados ALLOWED_ORIGINS e LOGIN_RATE_LIMIT_SECRET (novo valor criptograficamente aleatório, sem exposição em logs; arquivo temporário removido após envio).
+- Publicada login-with-username versão 1, status ACTIVE. Requisição com usuário aleatório inexistente e origem do site retornou HTTP 401 com erro neutro, confirmando passagem pela função e pela consulta de login, sem criar conta.
+- npm.cmd test: 17 testes passaram. Login com conta válida, cadastro, SMTP, retorno do Discord e publicação da interface no GitHub Pages ainda não verificados nesta etapa.
+
+## Contas Supabase e Discord — 21/09/2026
+
+- Integração local preparada para e-mail/senha, nome/senha via Edge Function e Discord via OAuth. Cadastro com confirmação, recuperação/troca de senha e perfil com foto privada. Nenhuma chave administrativa incluída no cliente.
+- Build TypeScript/Vite aprovado. npm test: 17 testes passaram, cobrindo configuração pública, validação, limites/erros do login por nome e regra de vínculo das fichas.
+- SQL executado em PostgreSQL isolado (PGlite): 28 verificações passaram. Estruturas Auth e Storage simuladas. Conferidos reaplicação sem perda de dados, perfis de e-mail/Discord, nomes únicos, acesso somente ao próprio perfil, rejeição de consulta anônima ao e-mail, políticas por pasta de fotos e contadores persistentes de tentativas.
+- Revisão estática independente levou a corrigir sincronização entre abas (armazenamento compartilhado padrão do SDK), reinicialização do formulário ao trocar o modo de recuperação e aviso para callback PKCE expirado/sem comprovante. Senhas não são persistidas; tokens de sessão e PKCE usam o armazenamento do SDK. Banco real e fluxo entre duas contas reais ainda não foram testados.
+- Navegador: formulários verificados em página local isolada, com respostas simuladas e sem rede. Campos vazios focaram o primeiro erro; Enter enviou o login, a recusa manteve o formulário e limpou a senha; confirmação diferente bloqueou cadastro; confirmação corrigida chamou o envio uma vez e exibiu retorno; solicitação de recuperação mostrou aviso neutro, e troca de modo abriu campos novos sem mensagem de senha alterada.
+- Aplicativo sem configuração: botões reais desabilitados, mensagem clara, acesso direto a #fichas retorna ao login; botão explícito de demonstração abre boas-vindas. Tab/Enter abriu o início, Fichas abriu o hub e recarregar voltou ao login. Mostrar/ocultar senha também conferido.
+- Cadastro inspecionado em 1920 × 1080 e 1366 × 768: cartão centralizado e documento sem transbordamento. Console sem erros/avisos na verificação final. Prévia local disponível na porta 5173.
+- AUTENTICACAO.md contém aplicação do SQL, função, URLs, SMTP, Discord e variáveis do GitHub; PUBLICAR.md/README atualizados. Workflow incorpora somente valores públicos VITE_* na compilação.
+
+Limites: não houve conexão ao Supabase do usuário, aplicação remota de SQL, publicação da função, configuração de provedor Discord/SMTP, envio de e-mails, upload real de foto, login real ou push/publicação do código. Essas verificações aguardam configuração do projeto hospedado. Fichas/campanhas/convites continuam temporários e identificados como demonstração. Mobile permanece adiado.
+
+
 ## Local do repositório — 17/09/2026
 
 - Confirmado que o repositório criado pelo GitHub Desktop estava em uma subpasta e continha apenas `.gitattributes` e um README inicial.

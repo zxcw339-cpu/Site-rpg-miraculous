@@ -11,6 +11,10 @@ import { SheetsHub } from './components/SheetsHub'
 import { CampaignHub } from './components/CampaignHub'
 import { exampleCampaigns, exampleSheets, findPlayerCampaign } from './hub-data'
 import { defaultTheme, getTheme, themeStorageKey } from './themes/themes'
+import { PasswordRecovery } from './components/PasswordRecovery'
+import { authConfigured, discordEnabled, supabase } from './auth/client'
+import { useAccount } from './auth/useAccount'
+import { register, requestPasswordReset, saveProfile, signIn, signInDiscord, updatePassword } from './auth/service'
 
 function readPreference() {
   try { return getTheme(localStorage.getItem(themeStorageKey)) }
@@ -18,6 +22,8 @@ function readPreference() {
 }
 
 function currentScreen() {
+  if (window.location.hash === '#recuperar-senha') return 'recovery'
+  if (window.location.hash === '#nova-senha') return 'password'
   if (window.location.hash === '#fichas') return 'sheets'
   if (window.location.hash === '#campanhas') return 'campaigns'
   if (window.location.hash === '#inicio') return 'home'
@@ -34,6 +40,9 @@ function desktopScale() {
 }
 
 export default function App() {
+  const account = useAccount()
+  const [demoMode, setDemoMode] = useState(false)
+  const [exitPending, setExitPending] = useState(false)
   const [theme, setTheme] = useState(readPreference)
   const [storageUnavailable, setStorageUnavailable] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
@@ -48,8 +57,26 @@ export default function App() {
   const isRegistration = screen === 'registration'
   const isWelcome = screen === 'welcome'
   const isHome = screen === 'home'
+  const isPassword = screen === 'password'
+  const isRecovery = screen === 'recovery' || isPassword
   const isWorkspace = isHome || screen === 'sheets' || screen === 'campaigns'
-  const screenTitle = screen === 'sheets' ? 'Fichas' : screen === 'campaigns' ? 'Campanhas' : isHome ? 'Início' : isWelcome ? 'Boas-vindas' : isRegistration ? 'Cadastro' : 'Login'
+  const screenTitle = screen === 'sheets' ? 'Fichas' : screen === 'campaigns' ? 'Campanhas' : isHome ? 'Início' : isWelcome ? 'Boas-vindas' : isRegistration ? 'Cadastro' : isRecovery ? 'Recuperar senha' : 'Login'
+  const protectedScreen = isWorkspace || isWelcome
+  const authenticated = Boolean(account.session)
+  const activeProfile = authenticated ? account.profile : previewProfile
+  const waitingForAccount = account.loading || (protectedScreen && !demoMode && (!authenticated || !account.profile))
+
+  useEffect(() => {
+    if (account.loading || demoMode) return
+    if (!authenticated && protectedScreen) window.location.hash = '#login'
+    else if (authenticated && !account.recovery && (screen === 'login' || screen === 'registration')) window.location.hash = '#boas-vindas'
+  }, [authenticated, account.loading, account.recovery, protectedScreen, screen, demoMode])
+
+  useEffect(() => {
+    // Never carry a previous person's temporary hub content into another account.
+    setSheets(exampleSheets)
+    setCampaigns(exampleCampaigns)
+  }, [account.session?.user.id, demoMode])
 
   useEffect(() => {
     const photoUrl = previewProfile?.photoUrl
@@ -99,11 +126,12 @@ export default function App() {
     window.addEventListener('resize', fitComposition)
     fitComposition()
     return () => { observer.disconnect(); window.removeEventListener('resize', fitComposition) }
-  }, [screen])
+  }, [screen, waitingForAccount])
 
   useEffect(() => {
     document.title = screenTitle + ' · Miraculous'
-    if (previousScreen.current !== screen && (screen === 'login' || screen === 'registration')) {
+    if (previousScreen.current !== screen && (screen === 'login' || screen === 'registration') && !authenticated) {
+      setDemoMode(false)
       setPreviewProfile(null)
       setSheets(exampleSheets)
       setCampaigns(exampleCampaigns)
@@ -113,22 +141,39 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'instant' })
     }
     previousScreen.current = screen
-  }, [screen, screenTitle])
+  }, [screen, screenTitle, authenticated])
 
-  function openWelcome(name: string, photo?: File, bio = '') {
-    // Only a temporary display name and local image reach the welcome screen.
-    setPreviewProfile({ name: name.trim(), bio, photoUrl: photo ? URL.createObjectURL(photo) : undefined })
+  function openDemo() {
+    setDemoMode(true)
+    setPreviewProfile({ name: 'Visitante', bio: '' })
     window.location.hash = '#boas-vindas'
   }
 
-  function exitPreview() {
+  async function exitPreview() {
+    if (exitPending) return
+    setExitPending(true)
+    if (supabase && authenticated) {
+      const { error } = await supabase.auth.signOut({ scope: 'local' })
+      if (error) {
+        account.setError('Não foi possível encerrar a sessão. Confira sua conexão e tente sair novamente.')
+        setExitPending(false)
+        return
+      }
+    }
+    setDemoMode(false)
     setPreviewProfile(null)
     setSheets(exampleSheets)
     setCampaigns(exampleCampaigns)
     window.location.hash = '#login'
+    setExitPending(false)
   }
 
-  function updatePreviewProfile(changes: { name: string; bio: string; photo?: File; removePhoto?: boolean }) {
+  async function updatePreviewProfile(changes: { name: string; bio: string; photo?: File; removePhoto?: boolean; username?: string }) {
+    if (account.session && account.profile) {
+      const userId = account.session.user.id
+      account.setProfile(userId, await saveProfile(userId, account.profile, changes))
+      return
+    }
     const replacementUrl = changes.photo ? URL.createObjectURL(changes.photo) : undefined
     setPreviewProfile(current => ({
       name: changes.name.trim(), bio: changes.bio,
@@ -149,7 +194,7 @@ export default function App() {
     <Atmosphere />
     <a className="skip-link" href={isWorkspace ? '#home-title' : isWelcome ? '#boas-vindas' : isRegistration ? '#cadastro' : '#login'} onClick={event => {
       event.preventDefault()
-      document.getElementById(isWorkspace ? 'home-title' : isWelcome ? 'welcome-title' : isRegistration ? 'register-name' : 'login-name')?.focus()
+      document.getElementById(isWorkspace ? 'home-title' : isWelcome ? 'welcome-title' : isRegistration ? 'register-name' : isRecovery ? 'recovery-title' : 'login-name')?.focus()
     }}>{isWorkspace ? 'Ir para o conteúdo' : isWelcome ? 'Ir para as boas-vindas' : 'Ir para o formulário'}</a>
     <header className="page-header">
       <a className="project-mark" href={isWorkspace ? '#inicio' : '#login'} aria-label={isWorkspace ? 'Miraculous — início' : 'Miraculous — login'}><GemIcon /><span>PAINEL DE CAMPANHAS</span></a>
@@ -157,14 +202,17 @@ export default function App() {
     </header>
 
     <main className="auth-main" aria-label={screenTitle}>
-      {isWorkspace ? <WorkspaceShell page={screen as 'home' | 'sheets' | 'campaigns'} profile={previewProfile ?? { name: 'Visitante', bio: '' }} titleRef={titleRef} onProfileChange={updatePreviewProfile} onExit={exitPreview}>
+      {waitingForAccount ? <section className="login-card account-loading" aria-live="polite">
+        <h2>{account.error ? 'Seu perfil está indisponível.' : 'Preparando seu acesso…'}</h2>
+        {account.error && <><p role="alert">{account.error}</p><button className="login-button" onClick={account.retry} disabled={account.profileLoading}>Tentar novamente</button><button className="secondary-button" onClick={exitPreview} disabled={exitPending}>Sair</button></>}
+      </section> : isWorkspace ? <WorkspaceShell authenticated={authenticated} page={screen as 'home' | 'sheets' | 'campaigns'} profile={activeProfile ?? { name: 'Visitante', bio: '' }} titleRef={titleRef} onProfileChange={updatePreviewProfile} onExit={exitPreview}>
         {screen === 'sheets' ? <SheetsHub sheets={sheets} campaigns={campaigns} titleRef={titleRef}
           onCreate={(name, campaignId) => setSheets(current => [...current, { id: crypto.randomUUID(), name, campaignId: findPlayerCampaign(campaigns, campaignId)?.id ?? null, isExample: false }])}
           onLink={(sheetId, campaignId) => setSheets(current => current.map(sheet => sheet.id === sheetId ? { ...sheet, campaignId: findPlayerCampaign(campaigns, campaignId)?.id ?? null } : sheet))}
         /> : screen === 'campaigns' ? <CampaignHub campaigns={campaigns} titleRef={titleRef}
           onCreate={name => setCampaigns(current => [...current, { id: crypto.randomUUID(), name, role: 'master', isExample: false }])}
           onJoinDemo={() => setCampaigns(current => current.some(campaign => campaign.id === 'example-invited') ? current : [...current, { id: 'example-invited', name: 'Campanha de convite (exemplo)', role: 'player', isExample: true }])}
-        /> : <HomeScreen name={previewProfile?.name || 'Visitante'} titleRef={titleRef} />}
+        /> : <HomeScreen name={activeProfile?.name || 'Visitante'} titleRef={titleRef} />}
       </WorkspaceShell> : <div ref={compositionRef} className={isRegistration ? 'auth-composition auth-composition-registration' : 'auth-composition'}>
         <div className="brand">
           <div className="brand-symbol" aria-hidden="true"><span /><GemIcon /><span /></div>
@@ -172,21 +220,26 @@ export default function App() {
           <p>PAINEL DE CAMPANHAS</p>
         </div>
 
-        {isWelcome ? <WelcomeScreen name={previewProfile?.name} photoUrl={previewProfile?.photoUrl} titleRef={titleRef} onEnter={() => { window.location.hash = '#inicio' }} onExit={exitPreview} /> : isRegistration ? <section className="login-card registration-card" aria-labelledby="registration-title">
+        {isWelcome ? <WelcomeScreen authenticated={authenticated} name={activeProfile?.name} photoUrl={activeProfile?.photoUrl} titleRef={titleRef} onEnter={() => { window.location.hash = '#inicio' }} onExit={exitPreview} /> : isRecovery ? <section className="login-card" aria-labelledby="recovery-title">
+          <h2 ref={titleRef} id="recovery-title" tabIndex={-1}>{isPassword ? 'Escolha sua nova senha.' : 'Recupere seu acesso.'}</h2>
+          {isPassword && !authenticated ? <p className="auth-message">Abra o link recebido por e-mail neste navegador. Se ele expirou, <a href="#recuperar-senha">solicite outro link</a>.</p> : <PasswordRecovery key={screen} mode={isPassword ? 'update' : 'request'} configured={authConfigured} onRequest={requestPasswordReset} onUpdate={async password => { await updatePassword(password); account.setRecovery(false) }} />}
+          <p className="registration-return"><a href="#login">Voltar ao login</a></p>
+        </section> : isRegistration ? <section className="login-card registration-card" aria-labelledby="registration-title">
           <span className="card-diamond card-diamond-top" aria-hidden="true" />
           <div className="registration-heading">
             <p className="eyebrow">UM NOVO COMEÇO</p>
             <h2 ref={titleRef} id="registration-title" tabIndex={-1}>Crie sua conta.</h2>
             <p className="login-subtitle">O primeiro passo para as suas próximas histórias.</p>
           </div>
-          <RegistrationForm onPreview={openWelcome} />
+          <RegistrationForm configured={authConfigured} discordEnabled={discordEnabled} onRegister={register} onDiscord={signInDiscord} />
           <p className="registration-return">Já tem uma conta? <a href="#login">Entrar <ArrowIcon /></a></p>
         </section> : <section className="login-card" aria-labelledby="login-title">
           <span className="card-diamond card-diamond-top" aria-hidden="true" />
           <div className="account-emblem"><UserIcon /></div>
           <h2 ref={titleRef} id="login-title" tabIndex={-1}>Sua história continua aqui.</h2>
           <p className="login-subtitle">Acesse sua conta e entre no seu universo.</p>
-          <LoginForm onPreview={openWelcome} />
+          <LoginForm configured={authConfigured} discordEnabled={discordEnabled} onSignIn={signIn} onDiscord={signInDiscord} />
+          {!authConfigured && <button type="button" className="auth-demo-button" onClick={openDemo}>Explorar demonstração sem criar conta</button>}
           <div className="register-divider"><span />Ainda não tem uma conta?<span /></div>
           <a className="register-link" href="#cadastro">Cadastre-se <ArrowIcon /></a>
         </section>}
@@ -199,9 +252,10 @@ export default function App() {
     </main>
 
     <footer className="page-footer">
-      <p id="prototype-note"><span className="preview-dot" aria-hidden="true" />PRÉVIA INTERATIVA<span className="footer-separator">/</span><span className="prototype-copy">Use dados fictícios. Sem autenticação nesta versão.</span></p>
+      <p id="prototype-note"><span className="preview-dot" aria-hidden="true" />{authenticated ? 'CONTA CONECTADA' : demoMode ? 'DEMONSTRAÇÃO' : 'MIRACULOUS RPG'}<span className="footer-separator">/</span><span className="prototype-copy">{authenticated ? 'Perfil salvo. Fichas e campanhas ainda são demonstrações temporárias.' : demoMode ? 'Dados fictícios. Nenhuma conta conectada.' : authConfigured ? 'Seu acesso, suas próximas histórias.' : 'Acesso às contas em configuração.'}</span></p>
       <span className="theme-indicator"><span aria-hidden="true" />Tema {theme.name}</span>
     </footer>
+    {account.error && !waitingForAccount && <div className="account-error" role="alert">{account.error}<button onClick={() => account.setError('')} aria-label="Fechar aviso">×</button></div>}
 
     <ThemePicker open={themePickerOpen} onClose={() => setThemePickerOpen(false)} theme={theme} onSelect={selectTheme} storageUnavailable={storageUnavailable} />
   </div>

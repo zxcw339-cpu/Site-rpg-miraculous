@@ -9,9 +9,10 @@ interface WelcomeScreenProps {
   titleRef: Ref<HTMLHeadingElement>
   onEnter: () => void
   onExit: () => void
+  authenticated?: boolean
 }
 
-export function WelcomeScreen({ name, photoUrl, titleRef, onEnter, onExit }: WelcomeScreenProps) {
+export function WelcomeScreen({ name, photoUrl, titleRef, onEnter, onExit, authenticated = false }: WelcomeScreenProps) {
   const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | undefined>()
   const displayName = name?.trim() || 'Visitante'
   const showPhoto = photoUrl && photoUrl !== failedPhotoUrl
@@ -34,6 +35,6 @@ export function WelcomeScreen({ name, photoUrl, titleRef, onEnter, onExit }: Wel
       <button type="button" className="secondary-button welcome-exit" onClick={onExit}>Sair</button>
     </div>
 
-    <p id="welcome-note" className="welcome-note">Prévia de navegação. Nenhum acesso ou cadastro real.</p>
+    <p id="welcome-note" className="welcome-note">{authenticated ? 'Sua conta está conectada. Pronto para continuar?' : 'Prévia de navegação. Nenhum acesso ou cadastro real.'}</p>
   </section>
 }

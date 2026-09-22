@@ -3,6 +3,13 @@ import type { ThemeSymbol } from '../themes/themes'
 
 type IconProps = SVGProps<SVGSVGElement>
 
+export function DiscordIcon(props: IconProps) {
+  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+    <path d="M8 5 5 6C3.3 8.5 2.3 11.6 2 15.3c1.4 1.4 3 2.2 5 2.7l1.2-1.8m7.8-11.2 3 1c1.7 2.5 2.7 5.6 3 9.3-1.4 1.4-3 2.2-5 2.7l-1.2-1.8M7 8c3.3-1.4 6.7-1.4 10 0M7 15c3.3 1.5 6.7 1.5 10 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <ellipse cx="8.5" cy="11.5" rx="1.2" ry="1.5" fill="currentColor" /><ellipse cx="15.5" cy="11.5" rx="1.2" ry="1.5" fill="currentColor" />
+  </svg>
+}
+
 export function GemIcon(props: IconProps) {
   return <svg viewBox="0 0 40 64" fill="none" aria-hidden="true" {...props}>
     <path d="M20 2 36 29 20 61 4 29Z M20 2 13 29 20 61 27 29Z M4 29 20 34 36 29" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" />

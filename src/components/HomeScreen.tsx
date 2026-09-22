@@ -2,15 +2,17 @@ import { useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import { GemIcon } from './Icons'
 import { HomeProfile } from './HomeProfile'
+import type { HomeProfileChanges, HomeProfileData } from './HomeProfile'
 import '../home.css'
 
 interface WorkspaceShellProps {
   page: 'home' | 'sheets' | 'campaigns'
   children: ReactNode
-  profile: { name: string; bio: string; photoUrl?: string }
+  profile: HomeProfileData
   titleRef: RefObject<HTMLHeadingElement | null>
-  onProfileChange: (changes: { name: string; bio: string; photo?: File; removePhoto?: boolean }) => void
+  onProfileChange: (changes: HomeProfileChanges) => void | Promise<void>
   onExit: () => void
+  authenticated?: boolean
 }
 
 function NavigationIcon({ kind }: { kind: 'menu' | 'home' | 'sheets' | 'campaigns' }) {
@@ -22,7 +24,7 @@ function NavigationIcon({ kind }: { kind: 'menu' | 'home' | 'sheets' | 'campaign
   </svg>
 }
 
-export function WorkspaceShell({ page, children, profile, titleRef, onProfileChange, onExit }: WorkspaceShellProps) {
+export function WorkspaceShell({ page, children, profile, titleRef, onProfileChange, onExit, authenticated = false }: WorkspaceShellProps) {
   const [expanded, setExpanded] = useState(false)
   const links = [
     { page: 'home', hash: '#inicio', label: 'Início' },
@@ -41,7 +43,7 @@ export function WorkspaceShell({ page, children, profile, titleRef, onProfileCha
           <NavigationIcon kind={link.page} /><span className="home-nav-label" aria-hidden="true">{link.label}</span>
         </a>)}
       </nav>
-      <div className="home-sidebar-profile"><HomeProfile profile={profile} onUpdate={onProfileChange} onExit={onExit} /></div>
+      <div className="home-sidebar-profile"><HomeProfile profile={profile} onUpdate={onProfileChange} onExit={onExit} authenticated={authenticated} /></div>
     </aside>
     <div className="home-canvas">{children}</div>
   </section>
