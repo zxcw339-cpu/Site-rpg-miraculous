@@ -23,7 +23,7 @@ Sem configuração Supabase local, o botão **Explorar demonstração** mostra e
 
 ## Ativar e publicar
 
-O SQL novo está em [supabase/migrations/202609240001_rpg_campaigns_sheets.sql](supabase/migrations/202609240001_rpg_campaigns_sheets.sql). Ele é aditivo e depende do SQL anterior de autenticação. **Aplique-o ao projeto Supabase antes de enviar esta atualização à branch `main`**, pois `main` publica automaticamente no GitHub Pages. Veja o procedimento em [PUBLICAR.md](PUBLICAR.md).
+O SQL novo está em [supabase/migrations/202609240001_rpg_campaigns_sheets.sql](supabase/migrations/202609240001_rpg_campaigns_sheets.sql). Ele é aditivo, depende do SQL anterior de autenticação e foi aplicado ao projeto Supabase em 24/09/2026. **Não execute essa migração novamente.** O envio desta atualização à branch `main` publica automaticamente no GitHub Pages. Veja o procedimento em [PUBLICAR.md](PUBLICAR.md).
 
 Não é necessário repetir todo o processo do Supabase a cada versão: cada migração nova é aplicada uma vez. A atualização visual V2, se não mudar o banco, exigirá apenas o envio dos arquivos do site.
 
