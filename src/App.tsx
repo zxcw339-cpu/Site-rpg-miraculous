@@ -12,11 +12,13 @@ import { CampaignHub } from './components/CampaignHub'
 import { CharacterSheetPage } from './components/CharacterSheetPage'
 import { CampaignWorkspacePage } from './components/CampaignWorkspacePage'
 import { exampleCampaigns, exampleSheets, findPlayerCampaign } from './hub-data'
+import { normalizeCampaignWorkspace } from './campaign-model'
 import { defaultTheme, getTheme, themeStorageKey } from './themes/themes'
 import { PasswordRecovery } from './components/PasswordRecovery'
 import { authConfigured, discordEnabled, supabase } from './auth/client'
 import { useAccount } from './auth/useAccount'
 import { register, requestPasswordReset, saveProfile, signIn, signInDiscord, updatePassword } from './auth/service'
+import { createCampaign, createInviteCode, createSheet, joinCampaign, linkSheet, loadCampaignMessages, loadCampaignWorkspace, loadGameData, revokeInviteCode, saveCampaignWorkspace, saveMasterSheetData, saveSheet, sendCampaignMessage } from './data/game'
 
 function readPreference() {
   try { return getTheme(localStorage.getItem(themeStorageKey)) }
@@ -51,9 +53,16 @@ export default function App() {
   const [storageUnavailable, setStorageUnavailable] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const [screen, setScreen] = useState(currentScreen)
+  const [routeHash, setRouteHash] = useState(window.location.hash)
   const [previewProfile, setPreviewProfile] = useState<PreviewProfile | null>(null)
   const [sheets, setSheets] = useState(exampleSheets)
   const [campaigns, setCampaigns] = useState(exampleCampaigns)
+  const [gameLoadedUserId, setGameLoadedUserId] = useState<string | null>(null)
+  const [gameError, setGameError] = useState('')
+  const [gameRevision, setGameRevision] = useState(0)
+  const [workspaceLoadingId, setWorkspaceLoadingId] = useState<string | null>(null)
+  const [workspaceError, setWorkspaceError] = useState('')
+  const [workspaceRevision, setWorkspaceRevision] = useState(0)
   const [scale, setScale] = useState(desktopScale)
   const previousScreen = useRef(screen)
   const titleRef = useRef<HTMLHeadingElement>(null)
@@ -67,8 +76,9 @@ export default function App() {
   const screenTitle = screen === 'sheet-detail' || screen === 'npc-detail' || screen === 'member-detail' ? 'Ficha' : screen === 'sheets' ? 'Fichas' : screen === 'campaigns' || screen === 'campaign-detail' ? 'Campanhas' : isHome ? 'Início' : isWelcome ? 'Boas-vindas' : isRegistration ? 'Cadastro' : isRecovery ? 'Recuperar senha' : 'Login'
   const protectedScreen = isWorkspace || isWelcome
   const authenticated = Boolean(account.session)
+  const persisted = authenticated && !demoMode
   const activeProfile = authenticated ? account.profile : previewProfile
-  const waitingForAccount = account.loading || (protectedScreen && !demoMode && (!authenticated || !account.profile))
+  const waitingForAccount = account.loading || (protectedScreen && !demoMode && (!authenticated || !account.profile || (gameLoadedUserId !== account.session?.user.id && !gameError)))
 
   useEffect(() => {
     if (account.loading || demoMode) return
@@ -77,10 +87,64 @@ export default function App() {
   }, [authenticated, account.loading, account.recovery, protectedScreen, screen, demoMode])
 
   useEffect(() => {
-    // Never carry a previous person's temporary hub content into another account.
-    setSheets(exampleSheets)
-    setCampaigns(exampleCampaigns)
-  }, [account.session?.user.id, demoMode])
+    let active = true
+    const userId = account.session?.user.id
+    // Never carry one account's content into another account or the demo.
+    setSheets(userId && !demoMode ? [] : exampleSheets)
+    setCampaigns(userId && !demoMode ? [] : exampleCampaigns)
+    setGameLoadedUserId(null)
+    setGameError('')
+    if (userId && !demoMode) {
+      void loadGameData().then(data => {
+        if (!active) return
+        setSheets(data.sheets)
+        setCampaigns(data.campaigns)
+        setGameLoadedUserId(userId)
+      }).catch((cause: unknown) => {
+        if (active) setGameError(cause instanceof Error ? cause.message : 'Não foi possível carregar suas fichas e campanhas.')
+      })
+    }
+    return () => { active = false }
+  }, [account.session?.user.id, demoMode, gameRevision])
+
+  useEffect(() => {
+    if (!persisted || gameLoadedUserId !== account.session?.user.id || !['campaign-detail', 'npc-detail', 'member-detail'].includes(screen)) return
+    const campaignId = decodeURIComponent(routeHash.slice('#campanha/'.length).split('/')[0] ?? '')
+    if (!campaignId || !campaigns.some(item => item.id === campaignId)) return
+    let active = true
+    setWorkspaceError('')
+    setWorkspaceLoadingId(campaignId)
+    void loadCampaignWorkspace(campaignId).then(workspace => {
+      if (active) setCampaigns(current => current.map(item => item.id === campaignId ? { ...item, workspace } : item))
+    }).catch((cause: unknown) => {
+      if (active) setWorkspaceError(cause instanceof Error ? cause.message : 'Não foi possível carregar a campanha.')
+    }).finally(() => { if (active) setWorkspaceLoadingId(null) })
+    return () => { active = false }
+  }, [persisted, gameLoadedUserId, account.session?.user.id, screen, routeHash, workspaceRevision])
+
+  useEffect(() => {
+    if (!persisted || screen !== 'campaign-detail' || gameLoadedUserId !== account.session?.user.id) return
+    const campaignId = decodeURIComponent(routeHash.slice('#campanha/'.length).split('/')[0] ?? '')
+    let active = true
+    let busy = false
+    const refresh = async () => {
+      if (!active || busy || document.visibilityState !== 'visible') return
+      busy = true
+      try {
+        const messages = await loadCampaignMessages(campaignId)
+        if (active) setCampaigns(current => current.map(item => {
+          if (item.id !== campaignId || !item.workspace) return item
+          const known = new Map(item.workspace.messages.map(message => [message.id, message]))
+          for (const message of messages) known.set(message.id, message)
+          const merged = [...known.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          return merged.length === item.workspace.messages.length ? item : { ...item, workspace: { ...item.workspace, messages: merged } }
+        }))
+      } catch { /* A manual refresh remains available if the network is interrupted. */ }
+      finally { busy = false }
+    }
+    const interval = window.setInterval(() => { void refresh() }, 10_000)
+    return () => { active = false; window.clearInterval(interval) }
+  }, [persisted, screen, routeHash, gameLoadedUserId, account.session?.user.id])
 
   useEffect(() => {
     const photoUrl = previewProfile?.photoUrl
@@ -96,7 +160,7 @@ export default function App() {
     function syncTheme(event: StorageEvent) {
       if (event.key === themeStorageKey || event.key === null) setTheme(getTheme(event.newValue))
     }
-    function syncScreen() { setScreen(currentScreen()) }
+    function syncScreen() { setRouteHash(window.location.hash); setScreen(currentScreen()) }
     window.addEventListener('storage', syncTheme)
     window.addEventListener('hashchange', syncScreen)
     return () => {
@@ -194,6 +258,24 @@ export default function App() {
     } catch { setStorageUnavailable(true) }
   }
 
+  async function updateWorkspace(campaignId: string, before: ReturnType<typeof normalizeCampaignWorkspace>, next: ReturnType<typeof normalizeCampaignWorkspace>) {
+    if (persisted) {
+      try { await saveCampaignWorkspace(campaignId, before, next) }
+      catch (cause) {
+        // A workspace edit may touch several rows. Re-read after a partial failure
+        // so the next action starts from what the database actually accepted.
+        try {
+          const refreshed = await loadCampaignWorkspace(campaignId)
+          setCampaigns(current => current.map(item => item.id === campaignId ? { ...item, workspace: refreshed } : item))
+        } catch { /* Keep the original save error visible to the user. */ }
+        throw cause
+      }
+    }
+    setCampaigns(current => current.map(item => item.id === campaignId ? { ...item, workspace: next } : item))
+  }
+
+  const accountGameError = persisted && protectedScreen && gameError
+
   return <div className="app auth-app" style={{ ...theme.colors, '--auth-scale': scale } as CSSProperties}>
     <Atmosphere variant={theme.atmosphere} />
     <a className="skip-link" href={isWorkspace ? '#home-title' : isWelcome ? '#boas-vindas' : isRegistration ? '#cadastro' : '#login'} onClick={event => {
@@ -209,37 +291,85 @@ export default function App() {
       {waitingForAccount ? <section className="login-card account-loading" aria-live="polite">
         <h2>{account.error ? 'Seu perfil está indisponível.' : 'Preparando seu acesso…'}</h2>
         {account.error && <><p role="alert">{account.error}</p><button className="login-button" onClick={account.retry} disabled={account.profileLoading}>Tentar novamente</button><button className="secondary-button" onClick={exitPreview} disabled={exitPending}>Sair</button></>}
+      </section> : accountGameError ? <section className="login-card account-loading" aria-live="polite">
+        <h2>Não foi possível abrir seus dados.</h2><p role="alert">{gameError}</p>
+        <button className="login-button" onClick={() => setGameRevision(current => current + 1)}>Tentar novamente</button>
+        <button className="secondary-button" onClick={exitPreview} disabled={exitPending}>Sair</button>
       </section> : isWorkspace ? <WorkspaceShell authenticated={authenticated} page={screen === 'sheet-detail' ? 'sheets' : screen === 'campaign-detail' || screen === 'npc-detail' || screen === 'member-detail' ? 'campaigns' : screen as 'home' | 'sheets' | 'campaigns'} profile={activeProfile ?? { name: 'Visitante', bio: '' }} titleRef={titleRef} onProfileChange={updatePreviewProfile} onExit={exitPreview}>
         {screen === 'sheet-detail' ? (() => {
-          const sheet = sheets.find(item => item.id === decodeURIComponent(window.location.hash.slice('#ficha/'.length)))
-          return sheet ? <CharacterSheetPage key={sheet.id} sheet={sheet} titleRef={titleRef} onSave={(name, details) => setSheets(current => current.map(item => item.id === sheet.id ? { ...item, name, details } : item))} />
-            : <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Ficha indisponível</h1><p>Esta ficha saiu da prévia. Volte ao hub para escolher outra.</p><a className="hub-button" href="#fichas">Voltar às fichas</a></div>
+          const sheet = sheets.find(item => item.id === decodeURIComponent(routeHash.slice('#ficha/'.length)))
+          return sheet ? <CharacterSheetPage key={sheet.id} sheet={sheet} persisted={persisted} titleRef={titleRef} onSave={async (name, details) => {
+            const updated = persisted ? await saveSheet(sheet.id, name, details) : { ...sheet, name, details }
+            setSheets(current => current.map(item => item.id === sheet.id ? updated : item))
+          }} />
+            : <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Ficha indisponível</h1><p>Não encontramos esta ficha na sua conta.</p><a className="hub-button" href="#fichas">Voltar às fichas</a></div>
         })() : screen === 'campaign-detail' || screen === 'npc-detail' || screen === 'member-detail' ? (() => {
-          const [campaignId, type, encodedNpcId] = window.location.hash.slice('#campanha/'.length).split('/')
+          const [campaignId, type, encodedNpcId] = routeHash.slice('#campanha/'.length).split('/')
           const campaign = campaigns.find(item => item.id === decodeURIComponent(campaignId))
-          if (!campaign) return <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Campanha indisponível</h1><p>Esta campanha saiu da prévia. Volte ao hub para escolher outra.</p><a className="hub-button" href="#campanhas">Voltar às campanhas</a></div>
+          if (!campaign) return <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Campanha indisponível</h1><p>Não encontramos esta campanha na sua conta.</p><a className="hub-button" href="#campanhas">Voltar às campanhas</a></div>
+          if (persisted && workspaceError) return <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Não foi possível abrir a mesa</h1><p role="alert">{workspaceError}</p><button className="hub-button" type="button" onClick={() => setWorkspaceRevision(current => current + 1)}>Tentar novamente</button><a className="hub-button" href="#campanhas">Voltar às campanhas</a></div>
+          if (persisted && (workspaceLoadingId === campaign.id || !campaign.workspace)) return <div className="hub-page hub-missing" aria-live="polite"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Abrindo campanha…</h1><p>Carregando os dados desta mesa.</p></div>
           if (type === 'npc' && campaign.role === 'master') {
             const npc = campaign.workspace?.npcs.find(item => item.id === decodeURIComponent(encodedNpcId || ''))
-            if (npc) return <CharacterSheetPage key={npc.id} sheet={{ id: npc.id, name: npc.name, campaignId: null, isExample: false, details: npc.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / NPCS E INIMIGOS" pageTitle="Ficha da mesa" masterManaged titleRef={titleRef} onSave={(name, details) => setCampaigns(current => current.map(item => item.id !== campaign.id ? item : { ...item, workspace: { ...item.workspace!, npcs: item.workspace!.npcs.map(entry => entry.id === npc.id ? { ...entry, name, details } : entry) } }))} />
+            if (npc) return <CharacterSheetPage key={npc.id} sheet={{ id: npc.id, name: npc.name, campaignId: null, isExample: false, details: npc.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / NPCS E INIMIGOS" pageTitle="Ficha da mesa" masterManaged persisted={persisted} titleRef={titleRef} onSave={async (name, details) => {
+              const before = normalizeCampaignWorkspace(campaign.workspace)
+              const next = structuredClone(before)
+              next.npcs = next.npcs.map(entry => entry.id === npc.id ? { ...entry, name, details } : entry)
+              await updateWorkspace(campaign.id, before, next)
+            }} />
           }
           if (type === 'jogador' && campaign.role === 'master') {
             const member = campaign.workspace?.members.find(item => item.id === decodeURIComponent(encodedNpcId || ''))
-            if (member) return <CharacterSheetPage key={member.id} sheet={{ id: member.id, name: member.characterName || `Ficha de ${member.name}`, campaignId: campaign.id, isExample: false, details: member.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / JOGADORES" pageTitle="Ficha do participante" masterManaged contextNote="Prévia: o mestre pode preencher dados civis para testar os bônus. Com o banco conectado, os valores civis virão da ficha do jogador e só o mestre alterará bônus e habilidades." titleRef={titleRef} onSave={(name, details) => setCampaigns(current => current.map(item => item.id !== campaign.id ? item : { ...item, workspace: { ...item.workspace!, members: item.workspace!.members.map(entry => entry.id === member.id ? { ...entry, characterName: name, details } : entry) } }))} />
+            if (member && persisted && !member.sheetId) return <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Ficha ainda não vinculada</h1><p>Peça ao jogador que vincule uma ficha a esta campanha no hub de fichas.</p><a className="hub-button" href={`#campanha/${encodeURIComponent(campaign.id)}`}>Voltar à mesa</a></div>
+            if (member) return <CharacterSheetPage key={member.sheetId ?? member.id} sheet={{ id: member.sheetId ?? member.id, name: member.characterName || `Ficha de ${member.name}`, campaignId: campaign.id, isExample: false, details: member.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / JOGADORES" pageTitle="Ficha do participante" masterManaged civilEditable={!persisted} persisted={persisted} contextNote={persisted ? 'O jogador edita os dados civis. Você configura os bônus das formas e as habilidades.' : 'Prévia: o mestre pode preencher dados civis para testar os bônus.'} titleRef={titleRef} onSave={async (name, details) => {
+              if (persisted) await saveMasterSheetData(member.sheetId!, details.forms, details.abilities)
+              setCampaigns(current => current.map(item => item.id !== campaign.id ? item : { ...item, workspace: { ...item.workspace!, members: item.workspace!.members.map(entry => entry.id === member.id ? { ...entry, characterName: persisted ? entry.characterName : name, details } : entry) } }))
+            }} />
           }
-          return <CampaignWorkspacePage key={campaign.id} campaign={campaign} sheets={sheets} titleRef={titleRef} viewerName={activeProfile?.name || 'Visitante'} onUpdate={workspace => setCampaigns(current => current.map(item => item.id === campaign.id ? { ...item, workspace } : item))} />
+          return <CampaignWorkspacePage key={campaign.id} campaign={campaign} sheets={sheets} titleRef={titleRef} viewerName={activeProfile?.name || 'Visitante'} persisted={persisted}
+            onUpdate={async (workspace, before) => { await updateWorkspace(campaign.id, before, workspace) }}
+            onRefresh={async () => {
+              const refreshed = await loadCampaignWorkspace(campaign.id)
+              setCampaigns(current => current.map(item => item.id === campaign.id ? { ...item, workspace: refreshed } : item))
+            }}
+            onSendMessage={async body => {
+              const message = await sendCampaignMessage(campaign.id, body)
+              setCampaigns(current => current.map(item => item.id === campaign.id ? { ...item, workspace: { ...normalizeCampaignWorkspace(item.workspace), messages: [...normalizeCampaignWorkspace(item.workspace).messages, message] } } : item))
+            }} />
         })() : screen === 'sheets' ? <SheetsHub sheets={sheets} campaigns={campaigns} titleRef={titleRef}
-          onCreate={(name, campaignId) => {
+          persisted={persisted} onCreate={async (name, campaignId) => {
+            if (persisted) {
+              const created = await createSheet(name, campaignId)
+              setSheets(current => [created, ...current])
+              return created.id
+            }
             const id = crypto.randomUUID()
             setSheets(current => [...current, { id, name, campaignId: findPlayerCampaign(campaigns, campaignId)?.id ?? null, isExample: false }])
             return id
           }}
-          onLink={(sheetId, campaignId) => setSheets(current => current.map(sheet => sheet.id === sheetId ? { ...sheet, campaignId: findPlayerCampaign(campaigns, campaignId)?.id ?? null } : sheet))}
+          onLink={async (sheetId, campaignId) => {
+            if (persisted) {
+              const updated = await linkSheet(sheetId, campaignId)
+              setSheets(current => current.map(sheet => sheet.id === sheetId ? updated : sheet))
+            } else setSheets(current => current.map(sheet => sheet.id === sheetId ? { ...sheet, campaignId: findPlayerCampaign(campaigns, campaignId)?.id ?? null } : sheet))
+          }}
         /> : screen === 'campaigns' ? <CampaignHub campaigns={campaigns} titleRef={titleRef}
-          onCreate={name => {
+          persisted={persisted} onCreate={async name => {
+            if (persisted) {
+              const created = await createCampaign(name)
+              setCampaigns(current => [created, ...current])
+              return created.id
+            }
             const id = crypto.randomUUID()
             setCampaigns(current => [...current, { id, name, role: 'master', isExample: false }])
             return id
           }}
+          onJoin={async code => {
+            const joined = await joinCampaign(code)
+            setCampaigns(current => current.some(item => item.id === joined.id) ? current : [joined, ...current])
+          }}
+          onCreateInvite={createInviteCode}
+          onRevokeInvite={revokeInviteCode}
           onJoinDemo={() => setCampaigns(current => current.some(campaign => campaign.id === 'example-invited') ? current : [...current, { id: 'example-invited', name: 'Campanha de convite (exemplo)', role: 'player', isExample: true }])}
         /> : <HomeScreen name={activeProfile?.name || 'Visitante'} titleRef={titleRef} />}
       </WorkspaceShell> : <div ref={compositionRef} className={isRegistration ? 'auth-composition auth-composition-registration' : 'auth-composition'}>
@@ -281,7 +411,7 @@ export default function App() {
     </main>
 
     <footer className="page-footer">
-      <p id="prototype-note"><span className="preview-dot" aria-hidden="true" />{authenticated ? 'CONTA CONECTADA' : demoMode ? 'DEMONSTRAÇÃO' : 'MIRACULOUS RPG'}<span className="footer-separator">/</span><span className="prototype-copy">{authenticated ? 'Perfil salvo. Fichas e campanhas ainda são demonstrações temporárias.' : demoMode ? 'Dados fictícios. Nenhuma conta conectada.' : authConfigured ? 'Seu acesso, suas próximas histórias.' : 'Acesso às contas em configuração.'}</span></p>
+      <p id="prototype-note"><span className="preview-dot" aria-hidden="true" />{authenticated ? 'CONTA CONECTADA' : demoMode ? 'DEMONSTRAÇÃO' : 'MIRACULOUS RPG'}<span className="footer-separator">/</span><span className="prototype-copy">{authenticated ? 'Fichas, campanhas e comunidade salvas na sua conta.' : demoMode ? 'Dados fictícios. Nenhuma conta conectada.' : authConfigured ? 'Seu acesso, suas próximas histórias.' : 'Acesso às contas em configuração.'}</span></p>
       <span className="theme-indicator"><span aria-hidden="true" />Tema {theme.name}</span>
     </footer>
     {account.error && !waitingForAccount && <div className="account-error" role="alert">{account.error}<button onClick={() => account.setError('')} aria-label="Fechar aviso">×</button></div>}

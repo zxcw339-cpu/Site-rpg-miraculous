@@ -1,6 +1,6 @@
 import type { SheetDetails } from './sheet-model'
 
-export interface CampaignMember { id: string; name: string; characterName?: string; status: 'Ativo' | 'Ausente'; details?: SheetDetails }
+export interface CampaignMember { id: string; name: string; characterName?: string; sheetId?: string; status: 'Ativo' | 'Ausente'; details?: SheetDetails }
 export interface CampaignNpc { id: string; name: string; notes: string; details?: SheetDetails }
 export interface CampaignItem { id: string; name: string; notes: string }
 export interface CampaignMedia { id: string; title: string; subtitle: string; description: string; imageDataUrl?: string; shared: boolean }

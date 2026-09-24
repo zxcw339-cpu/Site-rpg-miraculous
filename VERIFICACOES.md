@@ -1,5 +1,15 @@
 # Verificações do protótipo
 
+## Persistência de campanhas e fichas — 24/09/2026
+
+- Implementados serviço Supabase e SQL aditivo para campanhas, convites, fichas civis, bônus/habilidades do mestre, NPCs, itens, notas, cartões de mídia e chat. O mestre recebe um código de convite de 32 caracteres que pode trocar ou revogar. Cada participante pode vincular uma ficha ativa à campanha.
+- A migração foi executada **somente em PostgreSQL/WASM isolado**, junto com a migração anterior de autenticação. Passaram 39 verificações de criação, entrada por convite, controle de acesso, separação dos dados civis/do mestre e privacidade de conteúdo compartilhado. O banco hospedado ainda não recebeu esta migração nem foi testado nesta etapa.
+- `npm.cmd test`: 27 testes existentes aprovados. `npm.cmd run build`: TypeScript e Vite aprovados; aviso de pacote JavaScript acima de 500 kB, sem falha. O servidor local respondeu HTTP 200.
+- Na demonstração local, foram conferidos criação e abertura de campanha/ficha, rolagem direta, salvamento temporário, navegação e envio no chat. Sem configuração Supabase no ambiente local, **não** foram conferidos criação/vínculo/convite/chat entre duas contas reais.
+- Upload de imagens da ficha e do mural fica indisponível no modo conectado até a etapa de armazenamento. O site ainda não foi enviado ao GitHub nesta atualização. Mobile segue fora do escopo visual atual.
+
+Os registros abaixo são históricos das etapas anteriores. Indicações antigas de que fichas e campanhas são sempre temporárias descrevem aquelas versões, não o código desta atualização depois que a nova migração for aplicada.
+
 ## Catálogo das formas e preparação da publicação — 24/09/2026
 
 - Inseridas as 19 formas e os conceitos enviados para o projeto. Nenhuma mecânica ou habilidade foi presumida: bônus de atributos e perícias de cada transformação começam vazios e permanecem sob configuração do mestre. Os IDs antigos de Aranha/Aracne e Kitsune foram mantidos para preservar seus bônus já preenchidos durante a mesma visita.

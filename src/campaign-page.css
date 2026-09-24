@@ -25,6 +25,9 @@
 .campaign-panel > p:not(.home-overline),.campaign-media-form p { font-size:11px; line-height:1.6; color:#a99e92; }
 .campaign-page-footnote { margin:24px 0 0; text-align:center; color:#9e9285; font-size:10px; }
 .campaign-notice { margin:0 0 16px; padding:10px 12px; border-left:2px solid var(--accent-bright); background:var(--accent-soft); color:#e0c9ad; font-size:11px; }
+.campaign-notice-error { border-left-color:#d98888; background:#7e28282b; color:#f4c2c2; }
+.campaign-community-refresh { display:flex; justify-content:flex-end; margin:0 0 12px; }
+.campaign-panel button:disabled,.campaign-community-refresh button:disabled { opacity:.58; cursor:wait; }
 .campaign-inline-form,.campaign-roll-form { display:flex; align-items:end; gap:10px; margin:0 0 23px; }
 .campaign-inline-form label { flex:1; }
 .campaign-stack-form,.campaign-media-form { display:grid; gap:12px; max-width:660px; margin-bottom:23px; }

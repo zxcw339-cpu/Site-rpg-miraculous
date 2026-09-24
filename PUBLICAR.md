@@ -1,36 +1,30 @@
-# Publicar a prévia
+# Publicar a atualização de dados
 
-O site pode ser compartilhado como demonstração. Para ativar contas reais, conclua AUTENTICACAO.md antes de publicar esta atualização. Fichas e campanhas continuam temporárias.
+O site já usa GitHub Pages e o projeto Supabase existente. Esta atualização acrescenta fichas, campanhas, convites e Comunidade salvos. A ordem importa: **primeiro o SQL no Supabase, depois o envio à branch `main` do GitHub**. O envio à `main` publica automaticamente a nova interface.
 
-O caminho preparado é GitHub para guardar o projeto e GitHub Pages para servir o site. Supabase fica responsável pelas contas e perfis depois de configurado. Seus domínios não são uma solução de hospedagem da interface React. [Documentação do Supabase](https://supabase.com/docs/guides/platform/custom-domains).
+## 1. Aplicar o SQL uma única vez
 
-## 1. Enviar o projeto ao GitHub
+1. Entre no [painel do Supabase](https://supabase.com/dashboard) e abra o projeto usado pelo site. Confira que é o mesmo projeto cuja URL termina em `teizrbsaocefxhtaqpxj.supabase.co`.
+2. No menu esquerdo, abra **SQL Editor → New query**.
+3. Copie **todo** o conteúdo de [202609240001_rpg_campaigns_sheets.sql](supabase/migrations/202609240001_rpg_campaigns_sheets.sql), cole na consulta e clique em **Run**.
+4. Aguarde **Success**. Se surgir erro, pare e envie a mensagem de erro para corrigirmos antes de publicar o site.
 
-1. Instale o [GitHub Desktop](https://desktop.github.com/) e entre na sua conta.
-2. Em **File → Add local repository → Choose**, selecione `C:\Users\Gabriel C M\Documents\Site RPG miraculos`.
-3. A pasta do projeto já contém o repositório Git. Use **Add repository**. Se o Desktop informar que não encontra o local antigo, use **Locate** e selecione a mesma pasta acima. Não crie outra subpasta.
-4. Confira que os arquivos aparecem no Desktop. Na aba **Changes**, se houver alterações pendentes, escreva `Prévia inicial do painel` em **Summary** e clique em **Commit to main**. A publicação está configurada para a branch `main`.
-5. O repositório já está conectado a `https://github.com/zxcw339-cpu/Site-rpg-miraculous`. Depois do commit, use **Push origin** para enviar os arquivos do site. Não é necessário publicar outro repositório. Para usar Pages no GitHub Free, o repositório precisa ser público: isso torna o código público também.
+O arquivo cria tabelas e regras novas. Não exclui contas, perfis ou campanhas anteriores. Não repita a mesma migração depois de ela terminar com sucesso. A etapa antiga de [AUTENTICACAO.md](AUTENTICACAO.md) já deve ter sido aplicada ao projeto.
 
-Esse fluxo de envio é documentado no [GitHub Desktop](https://docs.github.com/en/desktop/adding-and-cloning-repositories/adding-an-existing-project-to-github-using-github-desktop). A disponibilidade do Pages em repositórios públicos ou privados depende do plano; no Free, use um repositório público. [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site).
+## 2. Enviar o site
 
-O `.gitignore` já exclui `node_modules`, `dist`, arquivos `.env`, cache e a pasta de testes visuais `.preview`. Envie os fontes, `public`, `tests`, os arquivos de configuração e `.github`. Não é necessário enviar a pasta `dist` manualmente.
+No GitHub Desktop, abra o repositório **Site-rpg-miraculous** na pasta `C:\Users\Gabriel C M\Documents\Site RPG miraculos`. Depois de aplicar o SQL, confira as alterações, faça **Commit to main** e **Push origin**. O GitHub Actions compila, testa e publica o `dist` no Pages; não é necessário enviar `dist` manualmente.
 
-## 2. Colocar o site no ar
+Veja a execução em [Actions](https://github.com/zxcw339-cpu/Site-rpg-miraculous/actions). Quando ela ficar verde, abra o [site](https://zxcw339-cpu.github.io/Site-rpg-miraculous/). Uma falha em Actions não deve ser tratada como publicação concluída.
 
-1. Abra o repositório no site do GitHub.
-2. Acesse **Settings → Pages → Build and deployment → Source → GitHub Actions**.
-3. Vá a **Actions → Publicar previa no GitHub Pages → Run workflow**, escolha `main` e execute. Se a primeira execução automática falhar porque Pages ainda não estava ativado, execute novamente depois do passo anterior.
-4. Aguarde as etapas de compilação e publicação ficarem verdes.
-5. Em **Settings → Pages**, clique em **Visit site**. O endereço terá o formato `https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/`. Use o link mostrado pelo GitHub, incluindo a barra final.
-6. Confira login, fichas, campanhas e fontes nesse endereço. Compartilhe o link explicando que é uma prévia com dados fictícios.
+## 3. Conferir com duas contas
 
-O fluxo `.github/workflows/deploy-pages.yml` já está pronto: instala as dependências, testa a regra das fichas, compila e publica apenas `dist`. O Vite usa caminhos relativos, compatíveis com a subpasta do repositório. A demonstração não precisa de chaves. Para contas reais, configure as variáveis públicas indicadas em AUTENTICACAO.md. [Publicação com Vite](https://vite.dev/guide/static-deploy.html#github-pages), [caminhos relativos](https://vite.dev/guide/build.html#relative-base).
+1. Na primeira conta, crie uma campanha e gere um convite no cartão dela. Copie o código.
+2. Na segunda conta, use **Campanhas → Entrar por convite**. A campanha deve aparecer em **Jogando**.
+3. Na segunda conta, crie uma ficha, vincule-a à campanha e salve alguns dados civis.
+4. Na primeira conta, abra **Jogadores** dentro da campanha. A ficha vinculada deve aparecer; o mestre pode configurar bônus e habilidades. A segunda conta deve ver esses valores ao abrir sua ficha.
+5. Publique uma nota compartilhada e troque uma mensagem na Comunidade. Confirme que a segunda conta vê a nota e o chat. Uma nota privada deve continuar visível só para o mestre.
 
-Para atualizar depois: faça as alterações, use **Commit to main → Push origin** no Desktop. O envio à `main` dispara uma nova publicação automaticamente.
+Arquivos de imagem da ficha e do mural ainda não são salvos. O envio de PNGs fica para a próxima atualização de armazenamento. A foto de perfil já segue a configuração anterior.
 
-## 3. Ativar as contas
-
-O código agora inclui contas e perfis com Supabase. Siga [AUTENTICACAO.md](AUTENTICACAO.md) para aplicar o SQL no projeto existente, publicar a função de login por nome e configurar e-mail/Discord e variáveis públicas do GitHub. O SQL ainda não foi aplicado ao banco hospedado nesta preparação.
-
-Fichas, campanhas e convites continuam temporários. Não exclua nem recrie seu projeto Supabase. No plano gratuito, projetos podem ser pausados por inatividade; o site estático permanece hospedado no Pages, mas o login depende do Supabase estar disponível.
+O processo de autenticação, Discord e SMTP não precisa ser refeito a cada versão. A V2 de estética não exigirá SQL novo se não mudar os dados.

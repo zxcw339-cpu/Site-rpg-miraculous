@@ -8,15 +8,19 @@ interface Props {
   workspace: CampaignWorkspace
   isMaster: boolean
   onManage: (area: 'media' | 'notes') => void
-  onSend: (body: string) => void
+  onSend: (body: string) => void | Promise<void>
+  persisted?: boolean
 }
 
-export function CampaignCommunity({ workspace, isMaster, onManage, onSend }: Props) {
+export function CampaignCommunity({ workspace, isMaster, onManage, onSend, persisted = false }: Props) {
   const [view, setView] = useState<'media' | 'notes'>('media')
   const [message, setMessage] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState('')
   const [image, setImage] = useState<CampaignMedia | null>(null)
   const logRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const messageRevision = useRef(0)
   const { media, notes } = communityContent(workspace)
   const lastMessageId = workspace.messages.at(-1)?.id
 
@@ -25,19 +29,26 @@ export function CampaignCommunity({ workspace, isMaster, onManage, onSend }: Pro
     if (log) log.scrollTop = log.scrollHeight
   }, [lastMessageId])
 
-  function send(event: FormEvent<HTMLFormElement>) {
+  async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const body = message.trim()
-    if (!body || body.length > 1500) return
-    onSend(body)
-    setMessage('')
-    inputRef.current?.focus({ preventScroll: true })
+    if (!body || body.length > 1500 || sending) return
+    const sentRevision = messageRevision.current
+    setSending(true)
+    setSendError('')
+    try {
+      await onSend(body)
+      if (messageRevision.current === sentRevision) setMessage('')
+      inputRef.current?.focus({ preventScroll: true })
+    } catch (cause) {
+      setSendError(cause instanceof Error ? cause.message : 'Não foi possível enviar a mensagem.')
+    } finally { setSending(false) }
   }
 
   return <section className="campaign-community" aria-labelledby="community-title">
     <header className="community-heading">
       <div><p className="home-overline">ESPAÇO DA MESA</p><h2 id="community-title">Comunidade</h2><p>Imagens, anotações e conversas da sua campanha.</p></div>
-      <span className="community-preview-badge">PRÉVIA</span>
+      <span className="community-preview-badge">{persisted ? 'MESA' : 'PRÉVIA'}</span>
     </header>
     <div className="community-layout">
       <section className="community-board" aria-label="Mural da campanha">
@@ -64,22 +75,23 @@ export function CampaignCommunity({ workspace, isMaster, onManage, onSend }: Pro
 
       <section className="community-chat" aria-labelledby="community-chat-title">
         <header className="community-chat-header"><span aria-hidden="true">◌</span><div><h3 id="community-chat-title">Chat da mesa</h3><p>Um lugar para conversar.</p></div></header>
-        <p className="community-chat-preview" id="community-chat-preview">Nesta prévia, só você vê as mensagens. Elas desaparecem ao recarregar.</p>
+        <p className="community-chat-preview" id="community-chat-preview">{persisted ? 'Mensagens salvas para os participantes desta mesa.' : 'Nesta prévia, só você vê as mensagens. Elas desaparecem ao recarregar.'}</p>
         <div className="community-chat-log" role="log" aria-label="Mensagens da mesa" aria-live="polite" aria-relevant="additions" ref={logRef}>
           {workspace.messages.length ? workspace.messages.map(item => <article className="community-message" key={item.id}>
             <div className="community-message-meta"><strong>{item.author}</strong><span>{item.role === 'master' ? 'Mestre' : 'Jogador'}</span><time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</time></div>
             <p>{item.body}</p>
-          </article>) : <div className="community-chat-empty"><span aria-hidden="true">“</span><p>A conversa começa aqui.</p><small>Escreva uma mensagem para experimentar o chat.</small></div>}
+          </article>) : <div className="community-chat-empty"><span aria-hidden="true">“</span><p>A conversa começa aqui.</p><small>{persisted ? 'Envie a primeira mensagem para os participantes da mesa.' : 'Escreva uma mensagem para experimentar o chat.'}</small></div>}
         </div>
         <form className="community-chat-form" onSubmit={send}>
           <label className="sr-only" htmlFor="community-message">Mensagem para a mesa</label>
-          <textarea id="community-message" ref={inputRef} value={message} maxLength={1500} rows={2} placeholder="Escreva uma mensagem…" aria-describedby="community-chat-preview community-chat-hint" onChange={event => setMessage(event.target.value)} onKeyDown={event => {
+          <textarea id="community-message" ref={inputRef} value={message} maxLength={1500} rows={2} placeholder="Escreva uma mensagem…" aria-describedby="community-chat-preview community-chat-hint" onChange={event => { messageRevision.current += 1; setMessage(event.target.value) }} onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault()
               event.currentTarget.form?.requestSubmit()
             }
           }} />
-          <div className="community-chat-form-footer"><span id="community-chat-hint">Enter envia · Shift + Enter quebra a linha<small>{message.length}/1500</small></span><button className="hub-button hub-button-primary" type="submit" disabled={!message.trim()}>Enviar <span aria-hidden="true">→</span></button></div>
+          {sendError && <p className="field-error" role="alert">{sendError}</p>}
+          <div className="community-chat-form-footer"><span id="community-chat-hint">Enter envia · Shift + Enter quebra a linha<small>{message.length}/1500</small></span><button className="hub-button hub-button-primary" type="submit" disabled={!message.trim() || sending}>{sending ? 'Enviando…' : 'Enviar'} <span aria-hidden="true">→</span></button></div>
         </form>
       </section>
     </div>

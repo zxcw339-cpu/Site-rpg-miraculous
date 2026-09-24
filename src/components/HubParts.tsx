@@ -13,13 +13,13 @@ export function HubIcon({ kind }: { kind: 'sheet' | 'campaign' | 'plus' | 'searc
   </svg>
 }
 
-export function HubHeader({ title, titleRef, description, query, onQueryChange, searchLabel, children }: {
+export function HubHeader({ title, titleRef, description, query, onQueryChange, searchLabel, children, persisted = false }: {
   title: string; titleRef: RefObject<HTMLHeadingElement | null>; description: string
-  query: string; onQueryChange: (value: string) => void; searchLabel: string; children: ReactNode
+  query: string; onQueryChange: (value: string) => void; searchLabel: string; children: ReactNode; persisted?: boolean
 }) {
   const searchRef = useRef<HTMLInputElement>(null)
   return <header className="hub-header">
-    <div className="hub-title-line"><div><p className="home-overline">SEU UNIVERSO</p><h1 id="home-title" ref={titleRef} tabIndex={-1}>{title}</h1><p className="hub-description">{description}</p></div><span className="hub-preview-label">PRÉVIA</span></div>
+    <div className="hub-title-line"><div><p className="home-overline">SEU UNIVERSO</p><h1 id="home-title" ref={titleRef} tabIndex={-1}>{title}</h1><p className="hub-description">{description}</p></div><span className="hub-preview-label">{persisted ? 'SALVO' : 'PRÉVIA'}</span></div>
     <div className="hub-toolbar">
       <label className="hub-search"><HubIcon kind="search" /><span className="sr-only">{searchLabel}</span><input ref={searchRef} type="search" placeholder={searchLabel} value={query} onChange={event => onQueryChange(event.target.value)} autoComplete="off" />{query && <button type="button" aria-label="Limpar busca" onClick={() => { onQueryChange(''); searchRef.current?.focus() }}>×</button>}</label>
       <div className="hub-actions">{children}</div>
@@ -57,11 +57,11 @@ export function HubRow({ title, count, children, emptyMessage }: { title: string
   </section>
 }
 
-export function HubCard({ kind, name, eyebrow, detail, isExample, onClick }: {
-  kind: 'sheet' | 'campaign'; name: string; eyebrow: string; detail: string; isExample: boolean; onClick: () => void
+export function HubCard({ kind, name, eyebrow, detail, isExample, onClick, persisted = false }: {
+  kind: 'sheet' | 'campaign'; name: string; eyebrow: string; detail: string; isExample: boolean; onClick: () => void; persisted?: boolean
 }) {
   return <button type="button" className={`hub-card hub-card-${kind}`} onClick={onClick} aria-label={`Abrir ${name}`} title={name} aria-haspopup="dialog">
     <span className="hub-card-art" aria-hidden="true"><span className="hub-card-seal"><HubIcon kind={kind} /></span><span className="hub-card-star">◇</span></span>
-    <span className="hub-card-copy"><span className="hub-card-eyebrow">{eyebrow}</span><span className="hub-card-name">{name}</span><span className="hub-card-detail">{detail}</span><span className="hub-card-meta">{isExample ? 'EXEMPLO' : 'NESTA PRÉVIA'}<HubIcon kind="arrow" /></span></span>
+    <span className="hub-card-copy"><span className="hub-card-eyebrow">{eyebrow}</span><span className="hub-card-name">{name}</span><span className="hub-card-detail">{detail}</span><span className="hub-card-meta">{persisted ? 'SALVA' : isExample ? 'EXEMPLO' : 'NESTA PRÉVIA'}<HubIcon kind="arrow" /></span></span>
   </button>
 }

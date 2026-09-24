@@ -1,37 +1,35 @@
 # Miraculous · Painel de campanhas
 
-Site React + TypeScript + Vite, com login, cadastro, boas-vindas, início, hubs, ficha completa e visões internas de campanha para jogador e mestre. Composição para PC com referência 1920 × 1080. A adaptação específica para celular está adiada.
+Site React + TypeScript + Vite para PC. O desenho específico para celular e o refinamento visual das páginas ficam para a V2. As aparências Aranha e Kitsune são provisórias; a preferência visual fica no navegador.
 
-## Aparências
+## Funcionalidades
 
-O menu Aparência permite alternar entre Aranha (grafite, vinho e fios com brilho) e Kitsune (grafite, vermelho profundo, portal e lanternas douradas). Kitsune segue a referência fornecida, com luz suave nas lanternas e balanço de papéis, sinos e fios ao vento. As animações respeitam a preferência de movimento reduzido do sistema. A escolha fica salva neste navegador e acompanha a navegação; símbolos e paletas continuam provisórios.
+Com o Supabase configurado, cadastro e login por nome ou e-mail, senha e Discord usam contas reais. O perfil é salvo no Supabase. [AUTENTICACAO.md](AUTENTICACAO.md) descreve essa configuração.
 
-## Contas e banco
+A atualização de dados acrescenta:
 
-A integração Supabase está implementada no código. A ativação no projeto hospedado e no Discord segue [AUTENTICACAO.md](AUTENTICACAO.md). Nada foi aplicado ao banco remoto nesta preparação.
+- Campanhas criadas pelo mestre, com código de convite válido por 30 dias. Gerar um novo código substitui o anterior; o mestre pode revogá-lo.
+- Entrada do jogador pelo código. Somente campanhas em que a pessoa joga podem receber suas fichas pessoais.
+- Fichas civis salvas na conta. Cada jogador pode vincular uma ficha ativa por campanha, ou manter quantas fichas independentes quiser.
+- Bônus de transformação e habilidades salvos separadamente, sob controle do mestre da campanha. Os valores civis continuam sob controle do jogador; ao rolar, os bônus da forma são somados aos civis.
+- Painel do mestre com NPCs, itens, notas e rolagens salvos. Notas e cartões de mídia marcados como compartilhados aparecem na Comunidade dos jogadores.
+- Chat salvo por campanha. Enquanto a mesa está aberta, novas mensagens são buscadas a cada 10 segundos; o botão **Atualizar mural** busca mudanças nas notas e mídias.
 
-- Login por nome de usuário ou e-mail e senha, sem Google; Discord opcional, habilitado por configuração.
-- Cadastro com nome de exibição, nome de usuário único, e-mail, senha/confirmar senha e bio opcional.
-- Confirmação de e-mail, recuperação/troca de senha, sessão e saída pelo Supabase Auth.
-- Perfis persistentes com nome, nome de usuário e bio; fotos em bucket privado, PNG/JPEG/WebP até 5 MB, adicionadas depois de entrar.
-- SQL com acesso somente ao próprio perfil/foto; e-mails e senhas não entram na tabela de perfis.
-- Login por nome via Edge Function, consulta privada e limitação persistente de tentativas. Nenhum catálogo público de e-mails.
-- Callback PKCE compatível com a subpasta do Pages. Sessão e comprovante temporário PKCE em localStorage, sincronizados entre abas pelo SDK; use Sair para encerrar o acesso neste navegador. Nenhuma senha armazenada pelo aplicativo.
-- Tema em localStorage (miraculous.theme). Sem configuração pública válida, os botões reais ficam desabilitados; há um botão explícito para explorar a demonstração.
+As regras de acesso ficam no banco: só o mestre vê conteúdo privado da campanha, e uma conta não pode alterar a ficha civil de outra. O site não armazena senhas em suas tabelas.
 
-## O que continua demonstrativo
+**Nesta atualização, arquivos de imagem da ficha e do mural ainda não são enviados ao banco.** Os campos de upload ficam indisponíveis quando a conta está conectada. Cartões de mídia com título, descrição e visibilidade já são salvos. Fotos do perfil seguem o fluxo de armazenamento existente.
 
-Fichas, campanhas e convites ficam em memória, mesmo quando uma conta real está conectada. O rodapé e os formulários informam isso. Recarregar ou sair descarta as alterações dos hubs. Exemplos neutros não definem lore.
+Sem configuração Supabase local, o botão **Explorar demonstração** mostra exemplos em memória. Eles não são dados reais e desaparecem ao recarregar.
 
-Fichas têm busca e linhas Não vinculadas, Vinculadas a campanhas e Todas. Fichas pessoais só podem se vincular a campanhas em que o usuário é jogador. A ficha interna inclui identidade (nome, gênero, idade, altura e retrato PNG), quatro barras, atributos em dados inteiros, perícias fixas em bônus de 5, inventário, habilidades em seção própria, lore e aparência com imagens PNG. A ficha mostra somente os valores da forma atual; ao transformar, exibe civil mais bônus daquela forma. O menu Miraculous inclui as 19 formas e conceitos fornecidos para o projeto; as duas aparências visuais do site continuam provisórias e são escolhidas separadamente. Os botões de dados rolam diretamente e mostram o resultado sem deslocar a página; as perícias usam o atributo escolhido na sua seção. O botão do cabeçalho rola um d20 livre. O mestre configura os bônus em um diálogo acessado pelo menu Miraculous, separado dos valores da ficha, e pode editar as habilidades dos participantes e NPCs temporários. Não há controles de adicionar/remover perícias nem seção de anotações da ficha. As fichas novas começam sem números e sem habilidades fictícias.
+## Ativar e publicar
 
-Campanhas têm busca e linhas Jogando, Mestrando e Todas, criação temporária e convite demonstrativo 123456. A visão de jogador abre fichas pessoais vinculadas e mídias compartilhadas; a visão de mestre usa atalhos para áreas completas de participantes, NPCs/inimigos, mídias, itens, notas e rolagens. O mestre pode abrir a ficha temporária de cada participante para configurar os bônus de cada forma e suas habilidades. Fichas de NPC ficam dentro da campanha do mestre, separadas das fichas pessoais. Os conteúdos da campanha são demonstrativos em memória. Ainda não há convites reais, vínculo real de fichas de outros jogadores, envio de conteúdos ou persistência no banco.
+O SQL novo está em [supabase/migrations/202609240001_rpg_campaigns_sheets.sql](supabase/migrations/202609240001_rpg_campaigns_sheets.sql). Ele é aditivo e depende do SQL anterior de autenticação. **Aplique-o ao projeto Supabase antes de enviar esta atualização à branch `main`**, pois `main` publica automaticamente no GitHub Pages. Veja o procedimento em [PUBLICAR.md](PUBLICAR.md).
 
-Dentro de cada campanha, a área Comunidade reúne um mural de imagens e anotações e um chat. O mestre escolhe em Mídias e Notas quais conteúdos ficam visíveis no mural; anotações privadas e antigas sem marcação permanecem fora dele. Imagens podem ser ampliadas. O chat aceita Enter para enviar e Shift + Enter para quebrar linha, com mensagens separadas por campanha. Nesta prévia, só a pessoa usando a aba vê as mensagens; não há envio entre contas e recarregar descarta a conversa. O próximo passo para uso em grupo é conectar campanhas, conteúdos e chat ao Supabase com permissões por participante.
+Não é necessário repetir todo o processo do Supabase a cada versão: cada migração nova é aplicada uma vez. A atualização visual V2, se não mudar o banco, exigirá apenas o envio dos arquivos do site.
 
 ## Executar e conferir
 
-Requer Node.js 22.12+; use Node 24 para os testes TypeScript nativos (validado com 24.18.0).
+Requer Node.js 22.12+ (testado com Node 24):
 
 ```sh
 npm ci
@@ -40,33 +38,13 @@ npm test
 npm run build
 ```
 
-Abra [a prévia local](http://127.0.0.1:5173/). Para integrar seu Supabase localmente, preencha .env.local conforme .env.example e reinicie a prévia. Nunca coloque uma chave administrativa em VITE_*.
+Abra [a versão local](http://127.0.0.1:5173/). Para testar contas reais localmente, crie `.env.local` a partir de `.env.example` com **somente** a URL e a chave publicável do Supabase; nunca use uma chave administrativa em `VITE_*`.
 
-Rotas: #login, #cadastro, #recuperar-senha, #nova-senha, #boas-vindas, #inicio, #fichas, #ficha/:id, #campanhas, #campanha/:id, #campanha/:id/npc/:id e #campanha/:id/jogador/:id. As páginas internas exigem sessão real ou entrada explícita no modo de demonstração. A autorização real dos perfis é aplicada pelo banco; fichas e campanhas não são enviadas a ele nesta fase.
-
-npm test verifica validações, configurações públicas, comportamento da função de login e regra das fichas. O teste SQL isolado adicional roda sem tocar no Supabase:
+O teste isolado de políticas SQL usa PostgreSQL/WASM sem acessar o projeto remoto:
 
 ```sh
 npm install --prefix .preview/backend-check --no-save --ignore-scripts @electric-sql/pglite
-node tests/backend-sql.integration.mjs .preview/backend-check/node_modules/@electric-sql/pglite/dist/index.js
+node tests/campaign-sql.integration.mjs .preview/backend-check/node_modules/@electric-sql/pglite/dist/index.js
 ```
 
-Esse teste usa PostgreSQL/WASM com estruturas de Auth/Storage simuladas. Verificações e limitações reais estão em [VERIFICACOES.md](VERIFICACOES.md).
-
-## Publicação
-
-GitHub Pages com caminhos relativos e fluxo de compilação/testes. [PUBLICAR.md](PUBLICAR.md) explica o envio pelo Desktop. [AUTENTICACAO.md](AUTENTICACAO.md) explica SQL, função, e-mail, Discord e variáveis do GitHub. A versão hospedada não exige PC ligado.
-
-## Organização
-
-- src/auth: cliente Supabase, validações, serviço e estado da conta.
-- supabase/migrations: SQL aditivo de perfis, acesso, fotos e limite de tentativas.
-- supabase/functions/login-with-username: função hospedada para login por nome.
-- src/App.tsx: navegação, tema e dados temporários dos hubs.
-- src/components: telas, perfil, formulários, diálogos e ornamentos.
-- src/hub-data.ts: exemplos e regra das fichas pessoais.
-- src/themes/themes.ts: arquitetura para 18 espaços; Aranha e Kitsune disponíveis, símbolos/paletas provisórios. preview-wine preservado por compatibilidade.
-- src/components/LanternAtmosphere.tsx e src/lantern-theme.css: desenho vetorial e animações do tema Kitsune, sem dependências adicionais.
-- public/fonts: fontes locais e licenças SIL Open Font License.
-
-React 19.3.0, Vite 8.3.0, TypeScript 7.0.2, plugin React 6.1.1 e Supabase JS 2.116.0, fixados no lockfile. O SDK oficial do Supabase é a única nova dependência de execução nesta etapa.
+O site hospedado em GitHub Pages e o Supabase funcionam sem o computador do criador ligado.
