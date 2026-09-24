@@ -1,7 +1,9 @@
 import { WebFrame } from './WebFrame'
+import { LanternAtmosphere } from './LanternAtmosphere'
 
 /** Original architectural frame and decorative silver strands. */
-export function Atmosphere() {
+export function Atmosphere({ variant = 'threads' }: { variant?: 'threads' | 'lanterns' }) {
+  if (variant === 'lanterns') return <LanternAtmosphere />
   return (
     <div
       className="atmosphere"

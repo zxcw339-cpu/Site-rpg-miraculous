@@ -5,17 +5,19 @@ export interface ThemeDefinition {
   name: string
   description: string
   symbol: ThemeSymbol
+  atmosphere: 'threads' | 'lanterns'
   colors: Record<`--${string}`, string>
 }
 
-// Aranha é a aparência em desenvolvimento. O símbolo e a paleta são
-// provisórios e poderão ser substituídos pelos materiais definitivos.
+// Aparências em desenvolvimento a partir das referências visuais.
+// Símbolos e paletas podem ser substituídos pelos materiais definitivos.
 export const previewThemes: readonly ThemeDefinition[] = [
   {
     id: 'preview-wine',
     name: 'Aranha',
     description: 'Grafite, prata e detalhes em vinho.',
     symbol: 'spider',
+    atmosphere: 'threads',
     colors: {
       '--accent': '#85384f',
       '--accent-hover': '#98425e',
@@ -25,6 +27,37 @@ export const previewThemes: readonly ThemeDefinition[] = [
       '--ornament': '#83727a',
       '--button-text': '#ffffff',
       '--panel-glow': 'rgba(164, 73, 101, 0.08)',
+      '--hub-surface': '#30232950',
+      '--hub-surface-hover': '#43283342',
+      '--hub-art-glow': '#8146592b',
+      '--hub-border': '#86777a57',
+      '--hub-border-hover': '#b9869a',
+      '--hub-ink': '#bc9da4',
+      '--hub-ink-muted': '#ae919b',
+    },
+  },
+  {
+    id: 'preview-kitsune',
+    name: 'Kitsune',
+    description: 'Grafite, vermelho profundo e lanternas em dourado suave.',
+    symbol: 'bloom',
+    atmosphere: 'lanterns',
+    colors: {
+      '--accent': '#822e2b',
+      '--accent-hover': '#a13d34',
+      '--accent-bright': '#d6b17c',
+      '--accent-soft': 'rgba(171, 91, 54, 0.14)',
+      '--ambient': 'rgba(108, 41, 31, 0.17)',
+      '--ornament': '#b99a70',
+      '--button-text': '#ffffff',
+      '--panel-glow': 'rgba(183, 128, 73, 0.06)',
+      '--hub-surface': '#382c1f50',
+      '--hub-surface-hover': '#58402742',
+      '--hub-art-glow': '#bc88342b',
+      '--hub-border': '#b3936257',
+      '--hub-border-hover': '#cfab74',
+      '--hub-ink': '#d0b28a',
+      '--hub-ink-muted': '#b49b78',
     },
   },
 ]
@@ -45,7 +78,7 @@ export const futureMiraculousSlots: readonly {
   return { id, theme: miraculousThemes[id] ?? null }
 })
 
-// A aparência Aranha ocupa provisoriamente um espaço central da caixa.
+// As aparências em estudo ocupam provisoriamente espaços centrais da caixa.
 // Uma definição definitiva substituirá o estudo sem alterar a navegação.
 export const themeSlots = futureMiraculousSlots.map((slot, index) => ({
   ...slot,

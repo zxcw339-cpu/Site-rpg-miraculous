@@ -1,5 +1,63 @@
 # Verificações do protótipo
 
+## Catálogo das formas e preparação da publicação — 24/09/2026
+
+- Inseridas as 19 formas e os conceitos enviados para o projeto. Nenhuma mecânica ou habilidade foi presumida: bônus de atributos e perícias de cada transformação começam vazios e permanecem sob configuração do mestre. Os IDs antigos de Aranha/Aracne e Kitsune foram mantidos para preservar seus bônus já preenchidos durante a mesma visita.
+- O menu oculto da ficha apresenta nomes e conceitos em uma lista com rolagem própria. Aparências do site continuam independentes das formas da ficha.
+- Na prévia, as 19 opções apareceram no menu; Morcego foi selecionado no fim da lista e passou a ser a forma atual. Console sem erros ou avisos na aba de teste. `npm.cmd test`: 27 testes aprovados, incluindo a preservação dos bônus antigos; `npm.cmd run build` e `git diff --cached --check` concluíram. O build ainda avisa que o arquivo JavaScript supera 500 kB.
+
+## Comunidade da campanha — 24/09/2026
+
+- Criada a área Comunidade nas visões de mestre e jogador, com mural de imagens/anotações e chat. Em Mídias e Notas, o mestre pode mostrar ou retirar conteúdos da Comunidade. Notas começam privadas; registros antigos sem marcação também permanecem privados.
+- No navegador, criadas uma anotação privada, uma visível e uma mídia com PNG sintético de teste. Somente os conteúdos marcados apareceram no mural. A imagem abriu ampliada e Escape fechou o diálogo. Retirar a visibilidade removeu cada conteúdo do mural sem apagar seu registro.
+- Chat: mensagem vazia bloqueada, Enter enviou e limpou o campo, Shift + Enter inseriu quebra de linha preservada no texto. Mensagens permaneceram durante a navegação da mesma campanha; abrir outra campanha mostrou sua conversa separada. Conferidos nomes e papéis Mestre/Jogador e ausência dos controles de gerenciamento na visão do jogador.
+- Layout de PC inspecionado em 1920 × 1080 e 1280 × 720, sem transbordamento horizontal ou corte do campo de mensagem e botão Enviar. Console da aba sem avisos ou erros. Verificação em aba separada, sem recarregar os dados da aba do usuário.
+- `npm.cmd test`: 26 testes aprovados, incluindo filtragem dos conteúdos privados, retirada de visibilidade, conversas independentes e compatibilidade dos registros antigos. Build TypeScript/Vite concluído; permanece o aviso de pacote JavaScript acima de 500 kB.
+- Chat e conteúdos continuam demonstrativos em memória, inclusive com conta real conectada. Não houve teste entre contas, sincronização em tempo real, persistência remota, mobile ou publicação. Nenhuma alteração no Supabase ou no GitHub nesta etapa.
+
+## Rolagem direta e valores da forma atual — 24/09/2026
+
+- Removido o painel intermediário de rolagem. O botão do cabeçalho rola 1d20 livre; cada atributo e perícia rola ao clicar e mostra o resultado em um quadro sobre a ficha. A seleção do atributo usado pelas perícias fica na própria seção. Valores de atributo não preenchidos recebem aviso claro, sem inventar uma quantidade de dados.
+- Atributos e perícias exibem apenas uma coluna de valor atual. No civil, o valor pode ser editado; transformado, aparece o total calculado. Os acréscimos são configurados somente pelo mestre em um diálogo separado no menu Miraculous. Removidos adicionar/remover/renomear perícias e a seção Anotações; Habilidades tem uma seção própria, separada do Inventário.
+- No navegador, conferidos 1d20 livre e teste civil com 2d20 +5 em um clique. Na ficha temporária do mestre, Força civil 2 +1 da Kitsune apareceu como 3d20; Luta civil +5 +5 apareceu como +10. Clicar em Luta retornou três dados e maior resultado +10. Voltar ao civil restaurou 2 e +5.
+- Enter no botão de rolagem também funcionou; a posição da rolagem interna permaneceu em 358 antes/depois do teste. Resultado visível sem salto de página, ausência de colunas extras e de Anotações conferidas na interface. Console sem avisos ou erros. Verificação em aba de teste separada, sem recarregar a aba do usuário.
+- `npm.cmd test`: 24 testes aprovados, incluindo a soma de dados/bônus e o uso do maior dado uma única vez. Build TypeScript/Vite concluído; permanece o aviso de pacote JavaScript acima de 500 kB. Nenhuma publicação ou alteração no Supabase nesta etapa; dados de fichas/campanhas continuam temporários.
+
+## Revisão da ficha civil e transformada — 24/09/2026
+
+- O total de atributo e perícia da forma transformada agora soma o valor civil ao bônus específico da forma. Exemplo conferido no navegador: Luta civil +5, Kitsune +5 = +10; Aranha sem bônus = +5. Atributos acrescentam dados inteiros; perícias, passos de 5.
+- A ficha pessoal oferece rolagem rápida de atributo e perícia, com os dados individuais e o resultado visíveis. O atalho de perícia leva ao painel para escolher o atributo. A rolagem não é enviada à campanha.
+- Identidade ampliada com gênero, idade, altura e retrato PNG; lore e aparência separadas, com galeria PNG. O menu de formas abriu após três cliques no ícone e também por Enter no controle acessível. Somente a visão do mestre mostrou controles de bônus e adição de habilidades.
+- No painel do mestre, adicionei um participante fictício, abri sua ficha temporária, configurei o bônus de Kitsune, adicionei habilidade e imagens PNG de teste e salvei. Os dados permaneceram ao sair da ficha e reabri-la durante a mesma visita. O retrato e a galeria foram testados com um PNG local sintético de 1×1 pixel.
+- Interface inspecionada na prévia em 1920 × 1080, sem transbordamento horizontal. Console da aba sem avisos ou erros. A ficha e os bônus de um participante real ainda não são sincronizados entre contas; os registros desta prévia ficam em memória e se perdem ao recarregar ou sair. Nenhum dado foi enviado ao Supabase ou publicado no GitHub nesta etapa.
+- `npm.cmd test`: 22 testes aprovados. `npm.cmd run build` e `git diff --check` concluíram. O build mantém o aviso de pacote JavaScript acima de 500 kB.
+
+## Ficha e páginas internas das campanhas — 24/09/2026
+
+- Ficha completa criada com barras Vida/Sanidade/Energia/Proteção, atributos em dados de 1 em 1, perícias em bônus de 5 em 5, valores civil/transformado separados, inventário, habilidades e notas. Nenhum nome, número, item ou habilidade do personagem enviado foi usado como valor inicial.
+- Visão interna de campanha para jogador com ficha vinculada e mídias compartilhadas; visão de mestre com atalhos para áreas completas de participantes, fichas de NPC/inimigos, mídias, itens, notas e rolagens. NPCs permanecem dentro da campanha, fora do hub de fichas pessoais.
+- No navegador integrado, criei ficha pela modal, abri o editor e validei os avisos para Vida atual acima do máximo e bônus de perícia fora de múltiplos de 5. Um valor válido foi salvo na memória da prévia. Também naveguei pelos hubs e pela mesa de jogador/mestre; criei uma campanha, participante, NPC, mídia, item e nota temporários e executei uma rolagem demonstrativa. Inspecionei visualmente a ficha e o hub do mestre no tema Kitsune, incluindo a referência de 1920 × 1080.
+- `npm test` passou com 20 testes; `npm run build` concluiu. Permanece aviso de pacote JavaScript acima de 500 kB. Não houve teste de autenticação real, persistência remota, upload de arquivo à nuvem, mobile, outros navegadores ou publicação desta atualização no GitHub.
+
+## Cores dos hubs por tema — 22/09/2026
+
+- Removidas cores vinho fixas dos cartões compartilhados de fichas/campanhas, incluindo fundos, bordas, ícones e realce ao passar o mouse. Indicadores, rolagem, navegação selecionada e caixa de convite também usam a paleta do tema.
+- Conferidos visualmente os dois hubs no Kitsune e inspecionados os estilos calculados: ícones dourados rgb(208, 178, 138), fundo bronze e bordas correspondentes.
+- Troca pelo seletor para Aranha confirmou retorno dos cartões à paleta vinho; retorno ao Kitsune restaurou dourado/bronze. A prévia ficou em Kitsune.
+- Build TypeScript/Vite aprovado; continua o aviso de pacote JavaScript acima de 500 kB. Alteração visual, sem novos testes automatizados ou publicação no GitHub.
+
+## Segundo tema: Kitsune — 22/09/2026
+
+- Build de produção TypeScript/Vite concluído e os 17 testes existentes passaram. Permanece o aviso de tamanho do pacote JavaScript (521,28 kB); não houve erro de compilação.
+- Prévia local respondeu HTTP 200. Login inspecionado visualmente em 1920 × 1080 e 1366 × 768, sem transbordamento horizontal ou vertical do documento.
+- Troca Kitsune → Aranha → Kitsune pelas setas do teclado no seletor: seleção e decoração correspondentes. Escape fechou o diálogo e devolveu o foco a Aparência.
+- Recarga manteve Kitsune selecionado.
+- Amostras do estilo calculado no navegador mostraram mudanças na rotação das lanternas e na opacidade de seus halos, confirmando as animações.
+- Cadastro e hub de campanhas inspecionados visualmente em 1366 × 768; navegação por boas-vindas, início e fichas também conferida, mantendo o tema. Foi utilizado o modo explícito de demonstração, sem conta conectada.
+- Console da aba de verificação sem erros ou avisos.
+- Revisão independente do catálogo, persistência, desenho SVG e acessibilidade. Decoração oculta da árvore de acessibilidade e sem interceptar cliques; brilho e movimento desativados pela regra prefers-reduced-motion. Essa preferência foi revisada no código, não emulada no navegador.
+- Nenhuma dependência nova, alteração no banco ou publicação no GitHub nesta etapa. A prévia local está sem configuração Supabase: login real e cadastro aparecem desabilitados; a versão pública não foi alterada. Não foram repetidos testes reais de autenticação, mobile ou outros navegadores.
+
 ## Publicação da função de login por nome — 22/09/2026
 
 - CLI autenticada pelo usuário. Projeto identificado: MiraculousRPGDB, `teizrbsaocefxhtaqpxj`, ativo.

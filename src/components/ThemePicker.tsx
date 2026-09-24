@@ -17,9 +17,9 @@ export function ThemePicker({ open, onClose, theme, onSelect, storageUnavailable
     <div className="modal-emblem"><BoxIcon /></div>
     <p className="eyebrow">APARÊNCIA</p>
     <h2 id="themes-title">Caixa dos Miraculous</h2>
-    <p id="themes-description" className="modal-description">Por enquanto, a caixa guarda apenas a aparência Aranha.</p>
+    <p id="themes-description" className="modal-description">Escolha a atmosfera das suas próximas histórias.</p>
     <fieldset className="theme-fieldset">
-      <legend className="sr-only">Aparência disponível</legend>
+      <legend className="sr-only">Aparências disponíveis</legend>
       <div className="theme-box">
         <span className="box-corner box-corner-one" aria-hidden="true" />
         <span className="box-corner box-corner-two" aria-hidden="true" />

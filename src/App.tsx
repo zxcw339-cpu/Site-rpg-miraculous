@@ -9,6 +9,8 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 import { HomeScreen, WorkspaceShell } from './components/HomeScreen'
 import { SheetsHub } from './components/SheetsHub'
 import { CampaignHub } from './components/CampaignHub'
+import { CharacterSheetPage } from './components/CharacterSheetPage'
+import { CampaignWorkspacePage } from './components/CampaignWorkspacePage'
 import { exampleCampaigns, exampleSheets, findPlayerCampaign } from './hub-data'
 import { defaultTheme, getTheme, themeStorageKey } from './themes/themes'
 import { PasswordRecovery } from './components/PasswordRecovery'
@@ -25,7 +27,9 @@ function currentScreen() {
   if (window.location.hash === '#recuperar-senha') return 'recovery'
   if (window.location.hash === '#nova-senha') return 'password'
   if (window.location.hash === '#fichas') return 'sheets'
+  if (window.location.hash.startsWith('#ficha/')) return 'sheet-detail'
   if (window.location.hash === '#campanhas') return 'campaigns'
+  if (window.location.hash.startsWith('#campanha/')) return window.location.hash.includes('/npc/') ? 'npc-detail' : window.location.hash.includes('/jogador/') ? 'member-detail' : 'campaign-detail'
   if (window.location.hash === '#inicio') return 'home'
   if (window.location.hash === '#boas-vindas') return 'welcome'
   return window.location.hash === '#cadastro' ? 'registration' : 'login'
@@ -59,8 +63,8 @@ export default function App() {
   const isHome = screen === 'home'
   const isPassword = screen === 'password'
   const isRecovery = screen === 'recovery' || isPassword
-  const isWorkspace = isHome || screen === 'sheets' || screen === 'campaigns'
-  const screenTitle = screen === 'sheets' ? 'Fichas' : screen === 'campaigns' ? 'Campanhas' : isHome ? 'Início' : isWelcome ? 'Boas-vindas' : isRegistration ? 'Cadastro' : isRecovery ? 'Recuperar senha' : 'Login'
+  const isWorkspace = isHome || screen === 'sheets' || screen === 'sheet-detail' || screen === 'campaigns' || screen === 'campaign-detail' || screen === 'npc-detail' || screen === 'member-detail'
+  const screenTitle = screen === 'sheet-detail' || screen === 'npc-detail' || screen === 'member-detail' ? 'Ficha' : screen === 'sheets' ? 'Fichas' : screen === 'campaigns' || screen === 'campaign-detail' ? 'Campanhas' : isHome ? 'Início' : isWelcome ? 'Boas-vindas' : isRegistration ? 'Cadastro' : isRecovery ? 'Recuperar senha' : 'Login'
   const protectedScreen = isWorkspace || isWelcome
   const authenticated = Boolean(account.session)
   const activeProfile = authenticated ? account.profile : previewProfile
@@ -191,7 +195,7 @@ export default function App() {
   }
 
   return <div className="app auth-app" style={{ ...theme.colors, '--auth-scale': scale } as CSSProperties}>
-    <Atmosphere />
+    <Atmosphere variant={theme.atmosphere} />
     <a className="skip-link" href={isWorkspace ? '#home-title' : isWelcome ? '#boas-vindas' : isRegistration ? '#cadastro' : '#login'} onClick={event => {
       event.preventDefault()
       document.getElementById(isWorkspace ? 'home-title' : isWelcome ? 'welcome-title' : isRegistration ? 'register-name' : isRecovery ? 'recovery-title' : 'login-name')?.focus()
@@ -205,12 +209,37 @@ export default function App() {
       {waitingForAccount ? <section className="login-card account-loading" aria-live="polite">
         <h2>{account.error ? 'Seu perfil está indisponível.' : 'Preparando seu acesso…'}</h2>
         {account.error && <><p role="alert">{account.error}</p><button className="login-button" onClick={account.retry} disabled={account.profileLoading}>Tentar novamente</button><button className="secondary-button" onClick={exitPreview} disabled={exitPending}>Sair</button></>}
-      </section> : isWorkspace ? <WorkspaceShell authenticated={authenticated} page={screen as 'home' | 'sheets' | 'campaigns'} profile={activeProfile ?? { name: 'Visitante', bio: '' }} titleRef={titleRef} onProfileChange={updatePreviewProfile} onExit={exitPreview}>
-        {screen === 'sheets' ? <SheetsHub sheets={sheets} campaigns={campaigns} titleRef={titleRef}
-          onCreate={(name, campaignId) => setSheets(current => [...current, { id: crypto.randomUUID(), name, campaignId: findPlayerCampaign(campaigns, campaignId)?.id ?? null, isExample: false }])}
+      </section> : isWorkspace ? <WorkspaceShell authenticated={authenticated} page={screen === 'sheet-detail' ? 'sheets' : screen === 'campaign-detail' || screen === 'npc-detail' || screen === 'member-detail' ? 'campaigns' : screen as 'home' | 'sheets' | 'campaigns'} profile={activeProfile ?? { name: 'Visitante', bio: '' }} titleRef={titleRef} onProfileChange={updatePreviewProfile} onExit={exitPreview}>
+        {screen === 'sheet-detail' ? (() => {
+          const sheet = sheets.find(item => item.id === decodeURIComponent(window.location.hash.slice('#ficha/'.length)))
+          return sheet ? <CharacterSheetPage key={sheet.id} sheet={sheet} titleRef={titleRef} onSave={(name, details) => setSheets(current => current.map(item => item.id === sheet.id ? { ...item, name, details } : item))} />
+            : <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Ficha indisponível</h1><p>Esta ficha saiu da prévia. Volte ao hub para escolher outra.</p><a className="hub-button" href="#fichas">Voltar às fichas</a></div>
+        })() : screen === 'campaign-detail' || screen === 'npc-detail' || screen === 'member-detail' ? (() => {
+          const [campaignId, type, encodedNpcId] = window.location.hash.slice('#campanha/'.length).split('/')
+          const campaign = campaigns.find(item => item.id === decodeURIComponent(campaignId))
+          if (!campaign) return <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Campanha indisponível</h1><p>Esta campanha saiu da prévia. Volte ao hub para escolher outra.</p><a className="hub-button" href="#campanhas">Voltar às campanhas</a></div>
+          if (type === 'npc' && campaign.role === 'master') {
+            const npc = campaign.workspace?.npcs.find(item => item.id === decodeURIComponent(encodedNpcId || ''))
+            if (npc) return <CharacterSheetPage key={npc.id} sheet={{ id: npc.id, name: npc.name, campaignId: null, isExample: false, details: npc.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / NPCS E INIMIGOS" pageTitle="Ficha da mesa" masterManaged titleRef={titleRef} onSave={(name, details) => setCampaigns(current => current.map(item => item.id !== campaign.id ? item : { ...item, workspace: { ...item.workspace!, npcs: item.workspace!.npcs.map(entry => entry.id === npc.id ? { ...entry, name, details } : entry) } }))} />
+          }
+          if (type === 'jogador' && campaign.role === 'master') {
+            const member = campaign.workspace?.members.find(item => item.id === decodeURIComponent(encodedNpcId || ''))
+            if (member) return <CharacterSheetPage key={member.id} sheet={{ id: member.id, name: member.characterName || `Ficha de ${member.name}`, campaignId: campaign.id, isExample: false, details: member.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / JOGADORES" pageTitle="Ficha do participante" masterManaged contextNote="Prévia: o mestre pode preencher dados civis para testar os bônus. Com o banco conectado, os valores civis virão da ficha do jogador e só o mestre alterará bônus e habilidades." titleRef={titleRef} onSave={(name, details) => setCampaigns(current => current.map(item => item.id !== campaign.id ? item : { ...item, workspace: { ...item.workspace!, members: item.workspace!.members.map(entry => entry.id === member.id ? { ...entry, characterName: name, details } : entry) } }))} />
+          }
+          return <CampaignWorkspacePage key={campaign.id} campaign={campaign} sheets={sheets} titleRef={titleRef} viewerName={activeProfile?.name || 'Visitante'} onUpdate={workspace => setCampaigns(current => current.map(item => item.id === campaign.id ? { ...item, workspace } : item))} />
+        })() : screen === 'sheets' ? <SheetsHub sheets={sheets} campaigns={campaigns} titleRef={titleRef}
+          onCreate={(name, campaignId) => {
+            const id = crypto.randomUUID()
+            setSheets(current => [...current, { id, name, campaignId: findPlayerCampaign(campaigns, campaignId)?.id ?? null, isExample: false }])
+            return id
+          }}
           onLink={(sheetId, campaignId) => setSheets(current => current.map(sheet => sheet.id === sheetId ? { ...sheet, campaignId: findPlayerCampaign(campaigns, campaignId)?.id ?? null } : sheet))}
         /> : screen === 'campaigns' ? <CampaignHub campaigns={campaigns} titleRef={titleRef}
-          onCreate={name => setCampaigns(current => [...current, { id: crypto.randomUUID(), name, role: 'master', isExample: false }])}
+          onCreate={name => {
+            const id = crypto.randomUUID()
+            setCampaigns(current => [...current, { id, name, role: 'master', isExample: false }])
+            return id
+          }}
           onJoinDemo={() => setCampaigns(current => current.some(campaign => campaign.id === 'example-invited') ? current : [...current, { id: 'example-invited', name: 'Campanha de convite (exemplo)', role: 'player', isExample: true }])}
         /> : <HomeScreen name={activeProfile?.name || 'Visitante'} titleRef={titleRef} />}
       </WorkspaceShell> : <div ref={compositionRef} className={isRegistration ? 'auth-composition auth-composition-registration' : 'auth-composition'}>

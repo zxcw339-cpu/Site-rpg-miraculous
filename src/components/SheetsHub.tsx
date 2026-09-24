@@ -8,7 +8,7 @@ import { Modal } from './Modal'
 interface SheetsHubProps {
   sheets: CharacterSheet[]
   campaigns: Campaign[]
-  onCreate: (name: string, campaignId: string | null) => void
+  onCreate: (name: string, campaignId: string | null) => string
   onLink: (sheetId: string, campaignId: string | null) => void
   titleRef: RefObject<HTMLHeadingElement | null>
 }
@@ -46,10 +46,11 @@ export function SheetsHub({ sheets, campaigns, onCreate, onLink, titleRef }: She
       return
     }
     const campaignId = findPlayerCampaign(campaigns, newCampaignId)?.id ?? null
-    onCreate(name, campaignId)
+    const id = onCreate(name, campaignId)
     setQuery('')
     setNotice(`“${name}” foi adicionada à prévia. Ela ficará disponível enquanto esta página estiver aberta.`)
     setCreating(false)
+    window.location.hash = `#ficha/${encodeURIComponent(id)}`
   }
 
   function openSheet(sheet: CharacterSheet) {
@@ -126,7 +127,7 @@ export function SheetsHub({ sheets, campaigns, onCreate, onLink, titleRef }: She
           {playerCampaigns.map(campaign => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
         </select>
         <p className="hub-demo-note" id="sheet-create-campaign-help">Só aparecem campanhas em que você é jogador. Fichas de NPCs e vilões serão criadas no hub do mestre.</p>
-        <p className="hub-demo-note">Esta ação adiciona uma ficha temporária ao hub. O editor completo de personagem será a próxima etapa.</p>
+        <p className="hub-demo-note">A ficha abre no editor após ser criada. Nesta prévia, os dados ainda são temporários.</p>
         <div className="hub-form-actions">
           <button className="hub-button" type="button" onClick={() => setCreating(false)}>Cancelar</button>
           <button className="hub-button hub-button-primary" type="submit">Criar na prévia<HubIcon kind="arrow" /></button>
@@ -146,12 +147,13 @@ export function SheetsHub({ sheets, campaigns, onCreate, onLink, titleRef }: She
           {playerCampaigns.map(campaign => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
         </select>
         <p className="hub-demo-note" id="sheet-link-campaign-help">Só aparecem campanhas em que você é jogador. Fichas de NPCs e vilões serão criadas no hub do mestre.</p>
-        <p className="hub-demo-note">Você já pode organizar o vínculo nesta prévia. Atributos, perícias e o restante da ficha serão desenvolvidos depois.</p>
+        <p className="hub-demo-note">Atributos, perícias, status, inventário e habilidades estão disponíveis na página da ficha.</p>
         <div className="hub-form-actions">
           <button className="hub-button" type="button" onClick={() => setSelectedId(null)}>Voltar às fichas</button>
           <button className="hub-button hub-button-primary" type="submit">Aplicar vínculo<HubIcon kind="arrow" /></button>
         </div>
       </form>
+      <div className="hub-form-actions"><a className="hub-button" href={`#ficha/${encodeURIComponent(selectedSheet.id)}`}>Abrir ficha <HubIcon kind="arrow" /></a></div>
     </Modal>}
   </div>
 }

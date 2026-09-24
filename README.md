@@ -1,6 +1,10 @@
 # Miraculous · Painel de campanhas
 
-Site React + TypeScript + Vite, com login, cadastro, boas-vindas, início e hubs de fichas/campanhas. Visual Aranha em grafite e vinho, fios independentes com brilho e composição para PC com referência 1920 × 1080. A adaptação específica para celular está adiada.
+Site React + TypeScript + Vite, com login, cadastro, boas-vindas, início, hubs, ficha completa e visões internas de campanha para jogador e mestre. Composição para PC com referência 1920 × 1080. A adaptação específica para celular está adiada.
+
+## Aparências
+
+O menu Aparência permite alternar entre Aranha (grafite, vinho e fios com brilho) e Kitsune (grafite, vermelho profundo, portal e lanternas douradas). Kitsune segue a referência fornecida, com luz suave nas lanternas e balanço de papéis, sinos e fios ao vento. As animações respeitam a preferência de movimento reduzido do sistema. A escolha fica salva neste navegador e acompanha a navegação; símbolos e paletas continuam provisórios.
 
 ## Contas e banco
 
@@ -19,9 +23,11 @@ A integração Supabase está implementada no código. A ativação no projeto h
 
 Fichas, campanhas e convites ficam em memória, mesmo quando uma conta real está conectada. O rodapé e os formulários informam isso. Recarregar ou sair descarta as alterações dos hubs. Exemplos neutros não definem lore.
 
-Fichas têm busca e linhas Não vinculadas, Vinculadas a campanhas e Todas. Fichas pessoais só podem se vincular a campanhas em que o usuário é jogador. Mesas em que ele é mestre ficam fora dos seletores; NPCs/vilões pertencerão ao futuro hub do mestre.
+Fichas têm busca e linhas Não vinculadas, Vinculadas a campanhas e Todas. Fichas pessoais só podem se vincular a campanhas em que o usuário é jogador. A ficha interna inclui identidade (nome, gênero, idade, altura e retrato PNG), quatro barras, atributos em dados inteiros, perícias fixas em bônus de 5, inventário, habilidades em seção própria, lore e aparência com imagens PNG. A ficha mostra somente os valores da forma atual; ao transformar, exibe civil mais bônus daquela forma. O menu Miraculous inclui as 19 formas e conceitos fornecidos para o projeto; as duas aparências visuais do site continuam provisórias e são escolhidas separadamente. Os botões de dados rolam diretamente e mostram o resultado sem deslocar a página; as perícias usam o atributo escolhido na sua seção. O botão do cabeçalho rola um d20 livre. O mestre configura os bônus em um diálogo acessado pelo menu Miraculous, separado dos valores da ficha, e pode editar as habilidades dos participantes e NPCs temporários. Não há controles de adicionar/remover perícias nem seção de anotações da ficha. As fichas novas começam sem números e sem habilidades fictícias.
 
-Campanhas têm busca e linhas Jogando, Mestrando e Todas, criação temporária e convite demonstrativo 123456. Não há convites reais, editor completo de personagem ou painéis de mestre/jogador. Os blocos compactos do futuro painel do mestre serão atalhos para áreas completas.
+Campanhas têm busca e linhas Jogando, Mestrando e Todas, criação temporária e convite demonstrativo 123456. A visão de jogador abre fichas pessoais vinculadas e mídias compartilhadas; a visão de mestre usa atalhos para áreas completas de participantes, NPCs/inimigos, mídias, itens, notas e rolagens. O mestre pode abrir a ficha temporária de cada participante para configurar os bônus de cada forma e suas habilidades. Fichas de NPC ficam dentro da campanha do mestre, separadas das fichas pessoais. Os conteúdos da campanha são demonstrativos em memória. Ainda não há convites reais, vínculo real de fichas de outros jogadores, envio de conteúdos ou persistência no banco.
+
+Dentro de cada campanha, a área Comunidade reúne um mural de imagens e anotações e um chat. O mestre escolhe em Mídias e Notas quais conteúdos ficam visíveis no mural; anotações privadas e antigas sem marcação permanecem fora dele. Imagens podem ser ampliadas. O chat aceita Enter para enviar e Shift + Enter para quebrar linha, com mensagens separadas por campanha. Nesta prévia, só a pessoa usando a aba vê as mensagens; não há envio entre contas e recarregar descarta a conversa. O próximo passo para uso em grupo é conectar campanhas, conteúdos e chat ao Supabase com permissões por participante.
 
 ## Executar e conferir
 
@@ -36,7 +42,7 @@ npm run build
 
 Abra [a prévia local](http://127.0.0.1:5173/). Para integrar seu Supabase localmente, preencha .env.local conforme .env.example e reinicie a prévia. Nunca coloque uma chave administrativa em VITE_*.
 
-Rotas: #login, #cadastro, #recuperar-senha, #nova-senha, #boas-vindas, #inicio, #fichas e #campanhas. As quatro últimas exigem sessão real ou entrada explícita no modo de demonstração. A autorização real dos dados é aplicada pelo banco.
+Rotas: #login, #cadastro, #recuperar-senha, #nova-senha, #boas-vindas, #inicio, #fichas, #ficha/:id, #campanhas, #campanha/:id, #campanha/:id/npc/:id e #campanha/:id/jogador/:id. As páginas internas exigem sessão real ou entrada explícita no modo de demonstração. A autorização real dos perfis é aplicada pelo banco; fichas e campanhas não são enviadas a ele nesta fase.
 
 npm test verifica validações, configurações públicas, comportamento da função de login e regra das fichas. O teste SQL isolado adicional roda sem tocar no Supabase:
 
@@ -59,7 +65,8 @@ GitHub Pages com caminhos relativos e fluxo de compilação/testes. [PUBLICAR.md
 - src/App.tsx: navegação, tema e dados temporários dos hubs.
 - src/components: telas, perfil, formulários, diálogos e ornamentos.
 - src/hub-data.ts: exemplos e regra das fichas pessoais.
-- src/themes/themes.ts: arquitetura para 18 espaços; somente Aranha disponível, símbolo/paleta provisórios. preview-wine preservado por compatibilidade.
+- src/themes/themes.ts: arquitetura para 18 espaços; Aranha e Kitsune disponíveis, símbolos/paletas provisórios. preview-wine preservado por compatibilidade.
+- src/components/LanternAtmosphere.tsx e src/lantern-theme.css: desenho vetorial e animações do tema Kitsune, sem dependências adicionais.
 - public/fonts: fontes locais e licenças SIL Open Font License.
 
 React 19.3.0, Vite 8.3.0, TypeScript 7.0.2, plugin React 6.1.1 e Supabase JS 2.116.0, fixados no lockfile. O SDK oficial do Supabase é a única nova dependência de execução nesta etapa.

@@ -1,8 +1,12 @@
+import type { SheetDetails } from './sheet-model'
+import type { CampaignWorkspace } from './campaign-model'
+
 export interface Campaign {
   id: string
   name: string
   role: 'player' | 'master'
   isExample: boolean
+  workspace?: CampaignWorkspace
 }
 
 export interface CharacterSheet {
@@ -10,6 +14,7 @@ export interface CharacterSheet {
   name: string
   campaignId: string | null
   isExample: boolean
+  details?: SheetDetails
 }
 
 // Personal character sheets only belong to campaigns where this user is a player.

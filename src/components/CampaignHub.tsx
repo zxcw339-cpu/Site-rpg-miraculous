@@ -8,7 +8,7 @@ import '../campaign-hub.css'
 
 interface CampaignHubProps {
   campaigns: Campaign[]
-  onCreate: (name: string) => void
+  onCreate: (name: string) => string
   onJoinDemo: () => void
   titleRef: RefObject<HTMLHeadingElement | null>
 }
@@ -58,10 +58,10 @@ export function CampaignHub({ campaigns, onCreate, onJoinDemo, titleRef }: Campa
     <p className={notice ? 'hub-status' : 'hub-demo-note'} role="status">{notice || 'Prévia demonstrativa · As alterações duram apenas nesta visita.'}</p>
 
     {dialog === 'create' && <CreateCampaignDialog onClose={() => setDialog(null)} onCreate={name => {
-      onCreate(name)
+      const campaignId = onCreate(name)
       setQuery('')
-      setNotice(`“${name}” adicionada a Mestrando nesta prévia. A campanha é temporária.`)
       setDialog(null)
+      window.location.hash = `#campanha/${encodeURIComponent(campaignId)}`
     }} />}
     {dialog === 'invite' && <CampaignInviteDialog alreadyJoined={alreadyJoined} onClose={() => setDialog(null)} onJoin={() => {
       onJoinDemo()
@@ -78,10 +78,10 @@ export function CampaignHub({ campaigns, onCreate, onJoinDemo, titleRef }: Campa
         <div><dt>Seu papel</dt><dd>{selectedCampaign?.role === 'master' ? 'Mestre' : 'Jogador'}</dd></div>
         <div><dt>Disponibilidade</dt><dd>{selectedCampaign?.isExample ? 'Campanha de exemplo' : 'Somente nesta prévia'}</dd></div>
       </dl>
-      <p className="modal-description" id={`${id}-campaign-note`}>Os painéis de mestre e jogador serão construídos nas próximas etapas. Por enquanto, você pode explorar a organização das campanhas e das fichas.</p>
+      <p className="modal-description" id={`${id}-campaign-note`}>Abra a mesa para explorar {selectedCampaign?.role === 'master' ? 'o painel do mestre e suas áreas de configuração' : 'sua ficha vinculada e as mídias compartilhadas'}.</p>
       <div className="hub-form-actions">
         <button type="button" className="hub-button" onClick={() => setSelectedCampaign(null)}>Voltar ao hub</button>
-        <a className="hub-button hub-button-primary" href="#fichas" onClick={() => setSelectedCampaign(null)}>Ver minhas fichas<HubIcon kind="arrow" /></a>
+        <a className="hub-button hub-button-primary" href={`#campanha/${encodeURIComponent(selectedCampaign?.id ?? '')}`}>Abrir mesa<HubIcon kind="arrow" /></a>
       </div>
     </Modal>
   </div>
