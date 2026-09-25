@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, RefObject } from 'react'
 import type { Campaign } from '../hub-data'
 import { matchesSearch } from '../hub-data'
@@ -12,12 +12,12 @@ interface CampaignHubProps {
   onCreate: (name: string) => string | Promise<string>
   onJoin?: (code: string) => void | Promise<void>
   onJoinDemo?: () => void
-  onCreateInvite?: (campaignId: string) => Promise<string>
-  onRevokeInvite?: (campaignId: string) => Promise<void>
+  onGetInvite?: (campaignId: string) => Promise<string>
+  onDelete?: (campaignId: string) => Promise<void>
   titleRef: RefObject<HTMLHeadingElement | null>
 }
 
-export function CampaignHub({ campaigns, persisted = false, onCreate, onJoin, onJoinDemo, onCreateInvite, onRevokeInvite, titleRef }: CampaignHubProps) {
+export function CampaignHub({ campaigns, persisted = false, onCreate, onJoin, onJoinDemo, onGetInvite, onDelete, titleRef }: CampaignHubProps) {
   const [query, setQuery] = useState('')
   const [dialog, setDialog] = useState<'create' | 'invite' | null>(null)
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
@@ -25,12 +25,25 @@ export function CampaignHub({ campaigns, persisted = false, onCreate, onJoin, on
   const [copyStatus, setCopyStatus] = useState('')
   const [inviteCode, setInviteCode] = useState('')
   const [invitePending, setInvitePending] = useState(false)
+  const [deletePending, setDeletePending] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const id = useId()
   const matching = campaigns.filter(campaign => matchesSearch(campaign.name, query))
   const playing = matching.filter(campaign => campaign.role === 'player')
   const mastering = matching.filter(campaign => campaign.role === 'master')
   const alreadyJoined = campaigns.some(campaign => campaign.id === 'example-invited')
   const searching = Boolean(query.trim())
+
+  useEffect(() => {
+    if (!persisted || !selectedCampaign || selectedCampaign.role !== 'master' || !onGetInvite) return
+    let active = true
+    setInvitePending(true)
+    setCopyStatus('')
+    void onGetInvite(selectedCampaign.id).then(code => { if (active) setInviteCode(code) }).catch(cause => {
+      if (active) setCopyStatus(cause instanceof Error ? cause.message : 'Não foi possível carregar o código desta mesa.')
+    }).finally(() => { if (active) setInvitePending(false) })
+    return () => { active = false }
+  }, [persisted, selectedCampaign?.id, selectedCampaign?.role, onGetInvite])
 
   function renderCards(items: Campaign[]) {
     return items.map(campaign => <HubCard
@@ -41,7 +54,7 @@ export function CampaignHub({ campaigns, persisted = false, onCreate, onJoin, on
       detail={campaign.role === 'master' ? 'Você é o mestre' : 'Você é jogador'}
       isExample={campaign.isExample}
       persisted={persisted}
-      onClick={() => { setSelectedCampaign(campaign); setCopyStatus(''); setInviteCode('') }}
+      onClick={() => { setSelectedCampaign(campaign); setCopyStatus(''); setInviteCode(''); setConfirmDelete(false) }}
     />)
   }
 
@@ -92,7 +105,7 @@ export function CampaignHub({ campaigns, persisted = false, onCreate, onJoin, on
       </dl>
       {persisted && selectedCampaign?.role === 'master' && !selectedCampaign.isExample && <div className="campaign-invite-share">
         <p className="eyebrow">CONVIDE JOGADORES</p>
-        <p className="modal-description">Gere um código e envie a quem você quer receber na campanha. Um novo código substitui o anterior.</p>
+        <p className="modal-description">Esta mesa tem um código único e permanente. Copie e envie aos seus jogadores.</p>
         {inviteCode ? <div className="campaign-invite-copy-row"><code>{inviteCode}</code><button type="button" className="hub-button" disabled={invitePending} onClick={async () => {
           try {
             await navigator.clipboard.writeText(inviteCode)
@@ -100,37 +113,23 @@ export function CampaignHub({ campaigns, persisted = false, onCreate, onJoin, on
           } catch {
             setCopyStatus('Não foi possível copiar. Selecione o código acima para copiá-lo.')
           }
-        }}>Copiar código</button></div> : <p className="hub-demo-note">O código aparece aqui após ser gerado. Se fechar este painel, você poderá gerar outro quando precisar.</p>}
+        }}>Copiar código</button></div> : <p className="hub-demo-note">{invitePending ? 'Carregando código da mesa…' : 'O código não pôde ser carregado.'}</p>}
         <div className="campaign-invite-actions">
-          <button type="button" className="hub-button" disabled={invitePending || !onCreateInvite} onClick={async () => {
-            if (!onCreateInvite || !selectedCampaign) return
+          {!inviteCode && <button type="button" className="hub-button" disabled={invitePending || !onGetInvite} onClick={async () => {
+            if (!onGetInvite || !selectedCampaign) return
             setInvitePending(true)
             setCopyStatus('')
             try {
-              const nextCode = await onCreateInvite(selectedCampaign.id)
-              if (!nextCode) throw new Error('O código não foi recebido. Tente gerar outro.')
+              const nextCode = await onGetInvite(selectedCampaign.id)
+              if (!nextCode) throw new Error('O código não foi recebido. Tente novamente.')
               setInviteCode(nextCode)
-              setCopyStatus('Código gerado. Copie e envie ao jogador.')
+              setCopyStatus('Código disponível. Copie e envie ao jogador.')
             } catch (caught) {
-              setCopyStatus(caught instanceof Error ? caught.message : 'Não foi possível gerar o código. Tente novamente.')
+              setCopyStatus(caught instanceof Error ? caught.message : 'Não foi possível carregar o código. Tente novamente.')
             } finally {
               setInvitePending(false)
             }
-          }}>{invitePending ? 'Aguarde…' : 'Gerar novo código'}</button>
-          {onRevokeInvite && <button type="button" className="hub-button" disabled={invitePending} onClick={async () => {
-            if (!selectedCampaign) return
-            setInvitePending(true)
-            setCopyStatus('')
-            try {
-              await onRevokeInvite(selectedCampaign.id)
-              setInviteCode('')
-              setCopyStatus('Código revogado. Ele não poderá mais ser usado.')
-            } catch (caught) {
-              setCopyStatus(caught instanceof Error ? caught.message : 'Não foi possível revogar o código. Tente novamente.')
-            } finally {
-              setInvitePending(false)
-            }
-          }}>{inviteCode ? 'Revogar este código' : 'Revogar código anterior'}</button>}
+          }}>{invitePending ? 'Aguarde…' : 'Carregar código'}</button>}
         </div>
         {copyStatus && <p className="campaign-copy-status" role="status">{copyStatus}</p>}
       </div>}
@@ -139,6 +138,13 @@ export function CampaignHub({ campaigns, persisted = false, onCreate, onJoin, on
         <button type="button" className="hub-button" disabled={invitePending} onClick={() => setSelectedCampaign(null)}>Voltar ao hub</button>
         <a className="hub-button hub-button-primary" href={`#campanha/${encodeURIComponent(selectedCampaign?.id ?? '')}`}>Abrir mesa<HubIcon kind="arrow" /></a>
       </div>
+      {selectedCampaign?.role === 'master' && !selectedCampaign.isExample && onDelete && <div className="campaign-delete-actions">{confirmDelete ? <><p>Excluir “{selectedCampaign.name}” permanentemente, incluindo conteúdo, chat e convites?</p><button type="button" className="hub-button" disabled={deletePending} onClick={() => setConfirmDelete(false)}>Cancelar</button><button type="button" className="hub-button hub-button-danger" disabled={deletePending} onClick={async () => {
+        setDeletePending(true)
+        setCopyStatus('')
+        try { await onDelete(selectedCampaign.id); setSelectedCampaign(null); setNotice('Campanha excluída permanentemente.') }
+        catch (cause) { setCopyStatus(cause instanceof Error ? cause.message : 'Não foi possível excluir a campanha.') }
+        finally { setDeletePending(false); setConfirmDelete(false) }
+      }}>{deletePending ? 'Excluindo…' : 'Excluir campanha'}</button></> : <button type="button" onClick={() => setConfirmDelete(true)}>Excluir campanha…</button>}</div>}
     </Modal>
   </div>
 }

@@ -1,4 +1,4 @@
-name: Publicar previa no GitHub Pages
+name: Publicar V1 no GitHub Pages
 
 on:
   push:

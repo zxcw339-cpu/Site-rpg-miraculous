@@ -57,6 +57,12 @@ export function HomeProfile({ profile, onUpdate, onExit, authenticated = false }
     return () => window.removeEventListener('resize', positionPopover)
   }, [popoverOpen])
 
+  useEffect(() => {
+    if (!notice) return
+    const timer = window.setTimeout(() => setNotice(''), 4_500)
+    return () => window.clearTimeout(timer)
+  }, [notice])
+
   function closeEditor() {
     setEditing(false)
     requestAnimationFrame(() => triggerRef.current?.focus())

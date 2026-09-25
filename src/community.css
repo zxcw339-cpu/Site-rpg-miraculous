@@ -51,7 +51,7 @@
 .community-message-meta strong { min-width:0; color:#e4d6c3; font-size:11px; font-weight:500; overflow-wrap:anywhere; }
 .community-message-meta span { color:var(--accent-bright); font-size:9px; }
 .community-message-meta time { margin-left:auto; color:#9c9287; font-size:9px; }
-.community-message p { margin:7px 0 0; padding:11px 13px; border:1px solid var(--hub-border); border-radius:0 7px 7px 7px; background:var(--accent-soft); color:#e2d8ca; font-size:12px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.community-message .community-message-body { margin:7px 0 0; padding:11px 13px; border:1px solid var(--hub-border); border-radius:0 7px 7px 7px; background:var(--accent-soft); color:#e2d8ca; font-size:12px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
 .community-chat-form { padding:14px 16px; border-top:1px solid var(--hub-border); }
 .community-chat-form textarea { display:block; width:100%; min-height:64px; max-height:110px; resize:vertical; padding:10px 12px; border:1px solid #82766b88; border-radius:6px; background:#101214bd; color:#ede5da; font-family:inherit; font-size:12px; line-height:1.6; }
 .community-chat-form textarea::placeholder { color:#92877b; }
@@ -76,3 +76,84 @@
   .community-chat-form textarea { min-height:50px; }
   .community-chat-form-footer { margin-top:6px; }
 }
+
+/* Mural: categorias e formatos de publicação dividem a mesma área. */
+.community-layout { grid-template-columns:minmax(0,1.45fr) minmax(330px,.9fr); }
+.community-board-topline { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; padding:17px 20px 14px; border-bottom:1px solid var(--hub-border); }
+.community-section-number { color:var(--accent-bright); font-size:9px; font-weight:600; letter-spacing:.19em; }
+.community-board-topline h3 { margin:5px 0 0; color:#f1e5d3; font:500 24px/1.1 'Cormorant Garamond',Georgia,serif; }
+.community-count { display:block; margin-top:6px; color:#a99e90; font-size:10px; white-space:nowrap; }
+.community-publish { flex:none; padding:9px 13px; border:1px solid var(--hub-border-hover); border-radius:5px; background:var(--accent-soft); color:#f1dec6; font-family:inherit; font-size:11px; cursor:pointer; }
+.community-publish:hover { border-color:var(--accent-bright); }
+.community-board-header { padding:10px 16px; }
+.community-filters { flex:1; min-width:0; overflow-x:auto; scrollbar-width:thin; }
+.community-filters button { flex:none; white-space:nowrap; }
+.community-manage { flex:none; padding:8px 10px; border:1px solid var(--hub-border-hover); border-radius:5px; text-decoration:none; }
+.community-category-form { display:grid; gap:10px; padding:14px 18px; border-bottom:1px solid var(--hub-border); background:var(--accent-soft); }
+.community-category-form label { display:block; margin-bottom:5px; color:#c8bba9; font-size:10px; }
+.community-category-form input { width:100%; padding:9px 11px; border:1px solid #82766b88; border-radius:5px; outline:0; background:#101214bd; color:#eee4d8; font-family:inherit; font-size:12px; }
+.community-category-form input:focus-visible,.community-message-edit textarea:focus-visible { border-color:var(--accent-bright); }
+.community-category-actions { display:flex; justify-content:flex-end; gap:8px; }
+.community-category-actions button,.community-message-edit button,.community-board-footer button { padding:7px 10px; border:1px solid var(--hub-border-hover); border-radius:5px; background:transparent; color:#e8d8c2; font:inherit; font-size:10px; cursor:pointer; }
+.community-category-actions button[type='submit'],.community-message-edit button[type='submit'] { background:var(--accent-soft); }
+.community-category-actions button:disabled,.community-message-edit button:disabled { opacity:.5; cursor:not-allowed; }
+.community-board-content { padding:16px; }
+.community-feed { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:13px; }
+.community-post { min-width:0; overflow:hidden; border:1px solid var(--hub-border); border-radius:7px; background:#16181aea; }
+.community-post-kicker { display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px; padding:10px 13px; color:var(--accent-bright); font-size:9px; text-transform:uppercase; letter-spacing:.12em; }
+.community-post-kicker span + span { color:#aa9e8e; text-transform:none; letter-spacing:0; }
+.community-post .community-image-open { width:100%; }
+.community-post .community-image-open img,.community-post-video { display:block; width:100%; height:175px; object-fit:cover; background:#101214; }
+.community-post-video { object-fit:contain; }
+.community-post-copy { padding:14px; }
+.community-post-copy h4 { margin:0 0 6px; color:#eee0cc; font:500 22px/1.15 'Cormorant Garamond',Georgia,serif; overflow-wrap:anywhere; }
+.community-post-copy p { margin:6px 0 0; color:#b9ad9e; font-size:11px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.community-post-copy .community-post-subtitle { color:var(--accent-bright); }
+.community-post-actions { display:flex; flex-wrap:wrap; gap:13px; margin-top:12px; }
+.community-post-actions button { padding:0; border:0; background:transparent; color:var(--accent-bright); font-family:inherit; font-size:10px; cursor:pointer; }
+.community-post-actions button:hover { text-decoration:underline; }
+.community-post-actions button:disabled { opacity:.55; cursor:wait; }
+.community-post-note { grid-column:span 2; border-left:2px solid var(--accent-bright); }
+.community-post-note .community-note-mark { float:left; margin:6px 0 0 15px; }
+.community-post-note .community-post-copy { padding-left:44px; }
+.community-post-note .community-post-copy p { font-size:12px; }
+.community-board-footer { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.community-board-footer > div { display:flex; flex-wrap:wrap; gap:7px; }
+.community-chat-header { justify-content:space-between; }
+.community-chat-header h3 { margin-top:6px; }
+.community-chat-refresh { display:grid; place-items:center; width:32px; height:32px; border:1px solid var(--hub-border-hover); border-radius:5px; background:transparent; color:#e0c9a5; font-size:21px; cursor:pointer; }
+.community-chat-refresh:disabled { opacity:.55; cursor:wait; }
+.community-chat-error { margin:0; padding:8px 16px; border-bottom:1px solid #a95c5666; background:#7f37332b; color:#efb7ae; font-size:11px; }
+.community-message { display:flex; align-items:flex-start; gap:9px; }
+.community-message-avatar { flex:none; display:grid; place-items:center; width:29px; height:29px; overflow:hidden; border:1px solid var(--hub-border-hover); border-radius:50%; background:var(--accent-soft); color:#edd9bc; font-size:9px; }
+.community-message-avatar img { width:100%; height:100%; object-fit:cover; }
+.community-message-main { min-width:0; flex:1; }
+.community-message-body { margin:6px 0 0; padding:10px 12px; border:1px solid var(--hub-border); border-radius:0 7px 7px 7px; background:var(--accent-soft); color:#e2d8ca; font-size:12px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; user-select:text; }
+.community-message-actions { display:flex; justify-content:flex-end; align-items:center; gap:8px; min-height:20px; }
+.community-message-actions small { color:#95887b; font-size:9px; }
+.community-message-actions button { padding:0; border:0; background:transparent; color:#beaa91; font:inherit; font-size:9px; cursor:pointer; }
+.community-message-actions button:hover { color:#f2ddbb; text-decoration:underline; }
+.community-message-edit { margin-top:7px; }
+.community-message-edit textarea { width:100%; min-height:70px; padding:10px; border:1px solid var(--hub-border-hover); border-radius:5px; background:#111315; color:#eee4d8; font-family:inherit; font-size:12px; line-height:1.5; resize:vertical; }
+.community-message-edit > div { display:flex; justify-content:flex-end; gap:7px; margin-top:6px; }
+.community-post-modal { width:min(610px,calc(100vw - 40px)); padding:31px; text-align:left; }
+.community-post-modal-heading h2 { margin:6px 0; color:#f1e4d1; font:500 31px/1.1 'Cormorant Garamond',Georgia,serif; }
+.community-post-modal-heading p { margin:0 0 20px; color:#ac9f90; font-size:11px; }
+.community-post-form { display:grid; gap:9px; }
+.community-post-form label,.community-post-form legend { color:#d2c3af; font-size:11px; }
+.community-post-form fieldset { margin:0 0 4px; padding:0; border:0; }
+.community-post-form legend { margin-bottom:8px; }
+.community-post-kind { display:flex; gap:8px; }
+.community-post-kind button { padding:9px 12px; border:1px solid var(--hub-border); border-radius:5px; background:transparent; color:#b6a99a; font-family:inherit; font-size:11px; cursor:pointer; }
+.community-post-kind button[aria-pressed='true'] { border-color:var(--hub-border-hover); background:var(--accent-soft); color:#f0ddc1; }
+.community-post-form input,.community-post-form textarea,.community-post-form select { width:100%; padding:10px 12px; border:1px solid #82766b88; border-radius:5px; background:#111315; color:#eee4d8; font-family:inherit; font-size:12px; }
+.community-post-form input[type='file'] { cursor:pointer; }
+.community-post-form textarea { min-height:110px; resize:vertical; line-height:1.6; }
+.community-post-form input:focus-visible,.community-post-form textarea:focus-visible,.community-post-form select:focus-visible { outline:1px solid var(--accent-bright); }
+.community-post-form small { color:#a99d8f; font-size:10px; overflow-wrap:anywhere; }
+.community-post-form-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:10px; }
+.community-post-form-actions button { padding:10px 14px; border:1px solid var(--hub-border-hover); border-radius:5px; background:transparent; color:#eee1d0; font-family:inherit; font-size:11px; cursor:pointer; }
+.community-post-form-actions button[type='submit'] { background:var(--accent); color:var(--button-text); }
+.community-post-form-actions button:disabled { opacity:.5; cursor:not-allowed; }
+@media (max-width:1150px) { .community-layout { grid-template-columns:minmax(0,1.2fr) minmax(300px,.85fr); } .community-feed { grid-template-columns:1fr; } .community-post-note { grid-column:auto; } }
+@media (max-width:800px) { .community-layout { display:flex; flex-direction:column; } .community-board,.community-chat { min-height:310px; } .community-chat { min-height:430px; } .community-heading { align-items:flex-start; } }

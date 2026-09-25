@@ -11,10 +11,11 @@ interface SheetsHubProps {
   persisted?: boolean
   onCreate: (name: string, campaignId: string | null) => string | Promise<string>
   onLink: (sheetId: string, campaignId: string | null) => void | Promise<void>
+  onDelete?: (sheetId: string) => void | Promise<void>
   titleRef: RefObject<HTMLHeadingElement | null>
 }
 
-export function SheetsHub({ sheets, campaigns, persisted = false, onCreate, onLink, titleRef }: SheetsHubProps) {
+export function SheetsHub({ sheets, campaigns, persisted = false, onCreate, onLink, onDelete, titleRef }: SheetsHubProps) {
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
@@ -23,6 +24,8 @@ export function SheetsHub({ sheets, campaigns, persisted = false, onCreate, onLi
   const [linkError, setLinkError] = useState('')
   const [createPending, setCreatePending] = useState(false)
   const [linkPending, setLinkPending] = useState(false)
+  const [deletePending, setDeletePending] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [linkCampaignId, setLinkCampaignId] = useState('')
   const [notice, setNotice] = useState('')
@@ -69,7 +72,22 @@ export function SheetsHub({ sheets, campaigns, persisted = false, onCreate, onLi
   function openSheet(sheet: CharacterSheet) {
     setLinkCampaignId(campaignFor(sheet)?.id ?? '')
     setLinkError('')
+    setConfirmDelete(false)
     setSelectedId(sheet.id)
+  }
+
+  async function deleteSelectedSheet() {
+    if (!selectedSheet || !onDelete || deletePending) return
+    setDeletePending(true)
+    setLinkError('')
+    try {
+      await onDelete(selectedSheet.id)
+      setNotice(`“${selectedSheet.name}” foi excluída.`)
+      setSelectedId(null)
+      setConfirmDelete(false)
+    } catch (caught) {
+      setLinkError(caught instanceof Error ? caught.message : 'Não foi possível excluir a ficha. Tente novamente.')
+    } finally { setDeletePending(false) }
   }
 
   async function applyLink(event: FormEvent<HTMLFormElement>) {
@@ -169,6 +187,7 @@ export function SheetsHub({ sheets, campaigns, persisted = false, onCreate, onLi
       <p className="eyebrow">{selectedSheet.isExample ? 'FICHA DE EXEMPLO' : persisted ? 'SUA FICHA' : 'FICHA DA PRÉVIA'}</p>
       <h2 id="sheet-details-title">{selectedSheet.name}</h2>
       <p className="modal-description" id="sheet-details-description">{campaignFor(selectedSheet) ? `Vinculada a ${campaignFor(selectedSheet)?.name}.` : 'Esta ficha está livre para participar de uma campanha.'}</p>
+      <a className="hub-button hub-button-primary sheet-open-primary" aria-disabled={linkPending || deletePending} onClick={event => { if (linkPending || deletePending) event.preventDefault() }} href={`#ficha/${encodeURIComponent(selectedSheet.id)}`}>Abrir ficha <HubIcon kind="arrow" /></a>
       <form className="hub-form" onSubmit={applyLink} aria-busy={linkPending}>
         <label htmlFor="sheet-link-campaign">Vínculo com campanha</label>
         <select id="sheet-link-campaign" value={linkCampaignId} disabled={linkPending} aria-describedby={`sheet-link-campaign-help${linkError ? ' sheet-link-error' : ''}`} onChange={event => { setLinkCampaignId(event.target.value); setLinkError('') }}>
@@ -177,13 +196,15 @@ export function SheetsHub({ sheets, campaigns, persisted = false, onCreate, onLi
         </select>
         <p className="hub-demo-note" id="sheet-link-campaign-help">Só aparecem campanhas em que você é jogador. Fichas de NPCs e vilões serão criadas no hub do mestre.</p>
         {linkError && <p className="hub-form-error" id="sheet-link-error" role="alert">{linkError}</p>}
-        <p className="hub-demo-note">Atributos, perícias, status, inventário e habilidades estão disponíveis na página da ficha.</p>
         <div className="hub-form-actions">
-          <button className="hub-button" type="button" disabled={linkPending} onClick={() => setSelectedId(null)}>Voltar às fichas</button>
+          <button className="hub-button" type="button" disabled={linkPending || deletePending} onClick={() => setSelectedId(null)}>Voltar às fichas</button>
           <button className="hub-button hub-button-primary" type="submit" disabled={linkPending}>{linkPending ? 'Salvando…' : 'Aplicar vínculo'}{!linkPending && <HubIcon kind="arrow" />}</button>
         </div>
       </form>
-      <div className="hub-form-actions"><a className="hub-button" aria-disabled={linkPending} onClick={event => { if (linkPending) event.preventDefault() }} href={`#ficha/${encodeURIComponent(selectedSheet.id)}`}>Abrir ficha <HubIcon kind="arrow" /></a></div>
+      {onDelete && <div className="sheet-delete-actions">
+        {confirmDelete ? <div className="sheet-delete-confirm" role="alert"><p>Excluir esta ficha permanentemente? Seus dados não poderão ser recuperados.</p><button className="hub-button" type="button" disabled={deletePending} onClick={() => setConfirmDelete(false)}>Cancelar</button><button className="hub-button hub-button-danger" type="button" disabled={deletePending} onClick={() => void deleteSelectedSheet()}>{deletePending ? 'Excluindo…' : 'Excluir definitivamente'}</button></div>
+          : <button className="sheet-remove-text" type="button" disabled={linkPending} onClick={() => setConfirmDelete(true)}>Excluir ficha</button>}
+      </div>}
     </Modal>}
   </div>
 }

@@ -53,6 +53,13 @@
 .hub-status:empty { display: none; }
 .hub-modal { width: min(480px, calc(100% - 32px)); }
 .hub-modal h2 { overflow-wrap: anywhere; }
+.sheet-open-primary { display: flex; width: 100%; min-height: 48px; margin-top: 22px; font-size: 14px; }
+.hub-button-danger { border-color: #9e554f; background: #77322e; color: #fff2ef; }
+.hub-button-danger:hover { background: #8b3b36; }
+.sheet-delete-actions { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--hub-border); text-align: left; }
+.sheet-delete-actions > button { border: 0; padding: 6px 0; background: none; color: #d7a7a1; font: inherit; font-size: 11px; text-decoration: underline; cursor: pointer; }
+.sheet-delete-confirm { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+.sheet-delete-confirm p { flex-basis: 100%; margin: 0 0 4px; color: #f0c7c1; font-size: 12px; line-height: 1.5; }
 .hub-form { text-align: left; margin-top: 24px; }
 .hub-form label { display: block; color: #e1d7cb; font-size: 12px; margin-bottom: 8px; }
 .hub-form input, .hub-form select, .hub-modal select { display: block; width: 100%; min-width: 0; height: 45px; padding: 0 12px; font: inherit; font-size: 13px; color: #eee4d9; background: #111315a0; border: 1px solid #81766a; border-radius: 5px; }

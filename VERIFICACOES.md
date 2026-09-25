@@ -1,12 +1,19 @@
 # Verificações do protótipo
 
+## Correções da V1 — 25/09/2026
+
+- Preparada migração aditiva para upload privado de imagens, categorias, edição da comunidade, código permanente por mesa, histórico de rolagens, registros de ações e permissões do mestre sobre fichas vinculadas. Na primeira consulta de leitura, o projeto hospedado tinha 2 campanhas, 5 fichas, 9 mensagens, 1 mídia e 0 notas. Na verificação seguinte, os recursos da migração já estavam presentes: categorias, rolagens, registros, funções, políticas, buckets privados e chat em tempo real. Uma tentativa de executar novamente o SQL foi recusada pelo gatilho `rpg_media_visibility_guard` existente; a transação foi revertida. As contagens permaneceram 2 campanhas, 5 fichas, 9 mensagens e 1 mídia. Não execute novamente essa migração.
+- `npm.cmd test`: 27 testes aprovados. `npm.cmd run build`: TypeScript/Vite aprovados; permanece o aviso de pacote JavaScript acima de 500 kB. O teste isolado de PostgreSQL/PGlite passou em 68 afirmações, incluindo limites de acesso de ex-participantes, permissão de edição do mestre e registros. A simulação não substitui um teste com duas contas no Supabase hospedado.
+- Na demonstração local, foram criados e editados um item da mesa e uma categoria da Comunidade; a exclusão da categoria preservou as publicações. Também criei uma ficha, editei gênero e atributo e salvei. A prévia local não dispõe das chaves do Supabase, portanto o upload remoto e o tempo real entre duas contas ainda precisam de teste separado.
+- O desenho mobile será próprio; [MOBILE.md](MOBILE.md) registra fluxos e verificações para essa etapa. A interface atual continua focada em PC.
+
 ## Persistência de campanhas e fichas — 24/09/2026
 
 - Implementados serviço Supabase e SQL aditivo para campanhas, convites, fichas civis, bônus/habilidades do mestre, NPCs, itens, notas, cartões de mídia e chat. O mestre recebe um código de convite de 32 caracteres que pode trocar ou revogar. Cada participante pode vincular uma ficha ativa à campanha.
 - Passaram 39 verificações em PostgreSQL/WASM isolado de criação, entrada por convite, controle de acesso, separação dos dados civis/do mestre e privacidade de conteúdo compartilhado. Em 24/09/2026, a migração foi aplicada ao projeto hospedado `MiraculousRPGDB` com retorno **Success**. Uma consulta antes/depois confirmou que `rpg_campaigns` e `rpg_sheets` passaram a existir; o perfil antigo `rpg_profiles` continuou presente. Ainda não houve teste do fluxo completo entre duas contas reais.
 - `npm.cmd test`: 27 testes existentes aprovados. `npm.cmd run build`: TypeScript e Vite aprovados; aviso de pacote JavaScript acima de 500 kB, sem falha. O servidor local respondeu HTTP 200.
 - Na demonstração local, foram conferidos criação e abertura de campanha/ficha, rolagem direta, salvamento temporário, navegação e envio no chat. Sem configuração Supabase no ambiente local, **não** foram conferidos criação/vínculo/convite/chat entre duas contas reais.
-- Upload de imagens da ficha e do mural fica indisponível no modo conectado até a etapa de armazenamento. O site ainda não foi enviado ao GitHub nesta atualização. Mobile segue fora do escopo visual atual.
+- Upload de imagens da ficha e do mural fica indisponível no modo conectado até a etapa de armazenamento. A atualização foi enviada à branch `main`; o GitHub Actions concluiu os testes, a compilação e o deploy com sucesso na [execução 5](https://github.com/zxcw339-cpu/Site-rpg-miraculous/actions/runs/36071501699). O site público carregou `index--DGAevAz.js`, o mesmo arquivo listado no build dessa execução. Mobile segue fora do escopo visual atual.
 
 Os registros abaixo são históricos das etapas anteriores. Indicações antigas de que fichas e campanhas são sempre temporárias descrevem aquelas versões, não o código desta atualização depois que a nova migração for aplicada.
 

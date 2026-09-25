@@ -35,7 +35,7 @@ button svg { flex-shrink: 0; }
 ::selection { background: var(--accent); color: var(--button-text); }
 .app { position: relative; isolation: isolate; min-height: 100svh; display: flex; flex-direction: column; background: radial-gradient(ellipse at 50% 37%, var(--ambient), transparent 58%); }
 .app::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .045; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.94' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23ffffff' filter='url(%23n)' opacity='.5' d='M0 0h160v160H0z'/%3E%3C/svg%3E"); }
-.web-frame { position: absolute; inset: 0; overflow: hidden; pointer-events: none; color: #cbd2d3; }
+.web-frame { position: absolute; inset: 0; overflow: hidden; pointer-events: none; user-select: none; color: #cbd2d3; }
 .web-corner { position: absolute; width: clamp(245px, 27vw, 400px); height: auto; overflow: visible; }
 .web-corner-top-left { top: -12px; left: -12px; }
 .web-corner-top-right { top: -12px; right: -12px; transform: scaleX(-1); }
@@ -66,6 +66,7 @@ button svg { flex-shrink: 0; }
 @keyframes pendant-glow { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
 
 .page-header { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; padding: 22px 42px; }
+.page-header, .page-footer, .auth-tail, .lantern-atmosphere { user-select: none; }
 .project-mark { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #a5a49e; font-size: 9px; letter-spacing: 2.5px; font-weight: 500; }
 .project-mark svg { width: 15px; height: 27px; }
 .appearance-trigger { display: flex; gap: 10px; align-items: center; border: 1px solid #41413e; background: #191a1dd9; border-radius: 6px; padding: 10px 14px; min-height: 42px; font-size: 12px; color: #d6d3cb; }

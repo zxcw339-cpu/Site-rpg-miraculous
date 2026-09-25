@@ -13,4 +13,8 @@
 .campaign-invite-copy-row { display: flex; align-items: center; gap: 9px; }
 .campaign-invite-copy-row code { display: block; flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--hub-border); border-radius: 5px; color: #eee4d9; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; user-select: all; }
 .campaign-invite-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+.campaign-delete-actions { margin-top: 22px; padding-top: 15px; border-top: 1px solid var(--hub-border); text-align: left; }
+.campaign-delete-actions > button:not(.hub-button) { border: 0; padding: 6px 0; color: #d7a7a1; background: transparent; font: inherit; font-size: 11px; text-decoration: underline; cursor: pointer; }
+.campaign-delete-actions p { color: #f0c7c1; font-size: 12px; line-height: 1.5; }
+.campaign-delete-actions .hub-button + .hub-button { margin-left: 8px; }
 .campaign-copy-status { margin: 10px 0 0; color: var(--accent-bright); font-size: 11px; line-height: 1.6; }

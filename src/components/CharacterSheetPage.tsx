@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, RefObject } from 'react'
 import type { CharacterSheet } from '../hub-data'
+import type { CampaignRoll } from '../campaign-model'
 import { attributeNames, availableForms, effectiveValue, formGrant, normalizeSheetDetails, parseAmount, resourceNames, rollDicePool, rollSheetTest, validateSheetDetails } from '../sheet-model'
 import type { AbilityKind, AttributeName, SheetDetails, SheetForm, SheetRoll } from '../sheet-model'
 import { Modal } from './Modal'
@@ -9,7 +10,7 @@ import '../sheet-page.css'
 interface Props {
   sheet: CharacterSheet
   titleRef: RefObject<HTMLHeadingElement | null>
-  onSave: (name: string, details: SheetDetails) => void | Promise<void>
+  onSave: (name: string, details: SheetDetails) => SheetDetails | void | Promise<SheetDetails | void>
   backHref?: string
   backLabel?: string
   headingContext?: string
@@ -18,6 +19,7 @@ interface Props {
   civilEditable?: boolean
   contextNote?: string
   persisted?: boolean
+  onRecordRoll?: (label: string, count: number, sides: number, bonus: number, mode: 'sum' | 'max') => Promise<CampaignRoll>
 }
 
 type RollResult = SheetRoll & { label: string }
@@ -37,7 +39,7 @@ function readPng(file: File): Promise<string> {
   })
 }
 
-export function CharacterSheetPage({ sheet, titleRef, onSave, backHref = '#fichas', backLabel = 'Voltar às fichas', headingContext = 'SEUS PERSONAGENS / FICHA', pageTitle = 'Ficha de personagem', masterManaged = false, civilEditable = true, contextNote, persisted = false }: Props) {
+export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, backHref = '#fichas', backLabel = 'Voltar às fichas', headingContext = 'SEUS PERSONAGENS / FICHA', pageTitle = 'Ficha de personagem', masterManaged = false, civilEditable = true, contextNote, persisted = false }: Props) {
   const [name, setName] = useState(sheet.name)
   const [draft, setDraft] = useState<SheetDetails>(() => normalizeSheetDetails(sheet.details))
   const [activeForm, setActiveForm] = useState<SheetForm>('civil')
@@ -50,8 +52,21 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, backHref = '#ficha
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const editRevision = useRef(0)
+  const savedRevision = useRef(0)
   const iconClicks = useRef({ count: 0, last: 0 })
   const formName = activeForm === 'civil' ? 'Civil' : availableForms.find(form => form.id === activeForm)?.name ?? 'Transformada'
+
+  useEffect(() => {
+    if (editRevision.current !== savedRevision.current) return
+    setName(sheet.name)
+    setDraft(normalizeSheetDetails(sheet.details))
+  }, [sheet.name, sheet.details])
+
+  useEffect(() => {
+    if (!rollResult && !rollError) return
+    const timer = window.setTimeout(() => { setRollResult(null); setRollError('') }, 5_000)
+    return () => window.clearTimeout(timer)
+  }, [rollResult, rollError])
 
   function edit(change: (next: SheetDetails) => void) {
     editRevision.current += 1
@@ -67,10 +82,12 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, backHref = '#ficha
     setSaving(true)
     setError('')
     setMessage('')
-    const savedRevision = editRevision.current
+    const revisionAtSave = editRevision.current
     try {
-      await onSave(name.trim(), structuredClone(draft))
-      setMessage(editRevision.current === savedRevision
+      const canonical = await onSave(name.trim(), structuredClone(draft))
+      savedRevision.current = revisionAtSave
+      if (editRevision.current === revisionAtSave && canonical) setDraft(normalizeSheetDetails(canonical))
+      setMessage(editRevision.current === revisionAtSave
         ? persisted ? 'Ficha salva na sua conta.' : 'Ficha salva nesta prévia. Os dados serão descartados ao recarregar ou sair.'
         : 'As alterações anteriores foram salvas. Há edições novas: salve novamente antes de sair.')
     } catch (cause) {
@@ -110,20 +127,38 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, backHref = '#ficha
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível abrir as imagens.') }
     event.target.value = ''
   }
-  function doRoll(attribute: AttributeName, skillId = '') {
+  async function doRoll(attribute: AttributeName, skillId = '') {
     try {
-      const result = rollSheetTest(draft, activeForm, attribute, skillId)
       const skill = draft.skills.find(item => item.id === skillId)
-      setRollResult({ ...result, label: `${attribute}${skill ? ` + ${skill.name}` : ''} · ${formName}` })
+      const label = `${attribute}${skill ? ` + ${skill.name}` : ''} · ${formName}`
+      if (onRecordRoll) {
+        const count = effectiveValue(draft.attributes[attribute].civil, bonusForAttribute(attribute))
+        if (!count) throw new Error(`Preencha ${attribute} com pelo menos 1 dado para rolar.`)
+        const bonus = skill ? effectiveValue(skill.civil, bonusForSkill(skill.id)) ?? 0 : 0
+        const recorded = await onRecordRoll(label, count, 20, bonus, 'max')
+        setRollResult({ dice: recorded.dice ?? [], bonus, total: recorded.result, label })
+      } else {
+        const result = rollSheetTest(draft, activeForm, attribute, skillId)
+        setRollResult({ ...result, label })
+      }
       setRollError('')
     } catch (cause) {
       setRollResult(null)
       setRollError(cause instanceof Error ? cause.message : 'Não foi possível rolar os dados.')
     }
   }
-  function rollD20() {
-    setRollResult({ ...rollDicePool(1), label: 'Rolagem livre · 1d20' })
-    setRollError('')
+  async function rollD20() {
+    try {
+      const label = 'Rolagem livre · 1d20'
+      if (onRecordRoll) {
+        const recorded = await onRecordRoll(label, 1, 20, 0, 'sum')
+        setRollResult({ dice: recorded.dice ?? [], bonus: 0, total: recorded.result, label })
+      } else setRollResult({ ...rollDicePool(1), label })
+      setRollError('')
+    } catch (cause) {
+      setRollResult(null)
+      setRollError(cause instanceof Error ? cause.message : 'Não foi possível registrar a rolagem.')
+    }
   }
 
   return <div className="sheet-page">
@@ -134,14 +169,17 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, backHref = '#ficha
     {contextNote && <p className="sheet-page-context-note">{contextNote}</p>}
     {(error || message) && <p className={`sheet-page-feedback ${error ? 'sheet-page-error' : ''}`} role={error ? 'alert' : 'status'}>{error || message}</p>}
     <div className="sheet-page-scroll">
+      <nav className="sheet-page-index" aria-label="Seções da ficha">
+        {([['sheet-identity-title', 'Identidade'], ['sheet-status-title', 'Status'], ['sheet-attributes-title', 'Atributos'], ['sheet-skills-title', 'Perícias'], ['sheet-inventory-title', 'Inventário'], ['sheet-abilities-title', 'Habilidades'], ['sheet-lore-title', 'Lore'], ['sheet-appearance-title', 'Aparência']] as const).map(([target, label]) => <button key={target} type="button" onClick={() => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{label}</button>)}
+      </nav>
       <div className="sheet-page-grid">
         <div className="sheet-page-column">
           <section className="sheet-panel" aria-labelledby="sheet-identity-title">
             <div className="sheet-panel-title"><span>01</span><h2 id="sheet-identity-title">Identidade</h2></div>
             <div className="sheet-portrait-row"><button className="sheet-avatar" type="button" onClick={clickIcon} aria-label="Ícone do personagem: clique três vezes para abrir o menu Miraculous" title="Três cliques abrem o menu Miraculous">{draft.portraitDataUrl ? <img src={draft.portraitDataUrl} alt="" /> : '◇'}</button><div><strong>{name || 'Sem nome'}</strong><small>Três cliques no ícone abrem o menu Miraculous.</small><button className="sr-only" type="button" onClick={() => setMiraculousOpen(current => !current)}>Abrir menu Miraculous</button></div></div>
             {miraculousOpen && <div className="sheet-miraculous-menu" role="group" aria-label="Menu Miraculous"><p>Escolha a forma da ficha</p><div className="sheet-form-list"><button type="button" aria-pressed={activeForm === 'civil'} className={activeForm === 'civil' ? 'active' : ''} onClick={() => setActiveForm('civil')}>Civil</button>{availableForms.map(form => <button key={form.id} type="button" aria-pressed={activeForm === form.id} className={activeForm === form.id ? 'active' : ''} onClick={() => setActiveForm(form.id)}><span>{form.name}</span><small>{form.concept}</small></button>)}</div>{masterManaged && activeForm !== 'civil' && <button className="sheet-manage-form" type="button" onClick={() => setGrantEditorOpen(true)}>Configurar bônus de {formName}</button>}<small>Os bônus são definidos pelo mestre. A aparência do site é escolhida separadamente.</small></div>}
-            {persisted ? <p className="sheet-panel-help">Retratos PNG serão salvos na próxima atualização.</p> : <label className="sheet-field">Retrato PNG<input type="file" accept="image/png" onChange={choosePortrait} /></label>}
-            {draft.portraitDataUrl && civilEditable && <button className="sheet-remove-text" type="button" onClick={() => edit(next => { delete next.portraitDataUrl })}>Remover retrato</button>}
+            {civilEditable && <label className="sheet-field">Retrato PNG<input type="file" accept="image/png" onChange={choosePortrait} /></label>}
+            {draft.portraitDataUrl && civilEditable && <button className="sheet-remove-text" type="button" onClick={() => edit(next => { delete next.portraitDataUrl; delete next.portraitPath })}>Remover retrato</button>}
             <label className="sheet-field">Nome<input value={name} maxLength={80} disabled={!civilEditable} onChange={event => { editRevision.current += 1; setName(event.target.value); setMessage('') }} /></label>
             <label className="sheet-field">Gênero<input value={draft.gender} maxLength={60} disabled={!civilEditable} onChange={event => edit(next => { next.gender = event.target.value })} /></label>
             <div className="sheet-identity-pair"><label className="sheet-field">Idade<input value={draft.age} maxLength={30} disabled={!civilEditable} placeholder="Opcional" onChange={event => edit(next => { next.age = event.target.value })} /></label><label className="sheet-field">Altura<input value={draft.height} maxLength={30} disabled={!civilEditable} placeholder="Opcional" onChange={event => edit(next => { next.height = event.target.value })} /></label></div>
@@ -191,7 +229,7 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, backHref = '#ficha
       </div>
       <div className="sheet-page-lower">
         <section className="sheet-panel" aria-labelledby="sheet-lore-title"><div className="sheet-panel-title"><span>07</span><h2 id="sheet-lore-title">Lore</h2></div><label className="sheet-field">História do personagem<textarea value={draft.lore} maxLength={5000} disabled={!civilEditable} placeholder="Origem, acontecimentos e motivações" onChange={event => edit(next => { next.lore = event.target.value })} /></label></section>
-        <section className="sheet-panel" aria-labelledby="sheet-appearance-title"><div className="sheet-panel-title"><span>08</span><h2 id="sheet-appearance-title">Aparência</h2></div><label className="sheet-field">Descrição visual<textarea value={draft.appearance} maxLength={3000} disabled={!civilEditable} placeholder="Traços, roupas e detalhes visuais" onChange={event => edit(next => { next.appearance = event.target.value })} /></label>{civilEditable && !persisted && <label className="sheet-field">Adicionar PNGs<input type="file" accept="image/png" multiple onChange={chooseAppearanceImages} /></label>}<div className="sheet-appearance-gallery">{draft.appearanceImages.map(image => <figure key={image.id}><img src={image.dataUrl} alt={image.name} /><figcaption>{image.name}</figcaption>{civilEditable && !persisted && <button type="button" onClick={() => edit(next => { next.appearanceImages = next.appearanceImages.filter(entry => entry.id !== image.id) })}>Remover</button>}</figure>)}</div></section>
+        <section className="sheet-panel" aria-labelledby="sheet-appearance-title"><div className="sheet-panel-title"><span>08</span><h2 id="sheet-appearance-title">Aparência</h2></div><label className="sheet-field">Descrição visual<textarea value={draft.appearance} maxLength={3000} disabled={!civilEditable} placeholder="Traços, roupas e detalhes visuais" onChange={event => edit(next => { next.appearance = event.target.value })} /></label>{civilEditable && <label className="sheet-field">Adicionar PNGs<input type="file" accept="image/png" multiple onChange={chooseAppearanceImages} /></label>}<div className="sheet-appearance-gallery">{draft.appearanceImages.map(image => <figure key={image.id}><img src={image.dataUrl} alt={image.name} /><figcaption>{image.name}</figcaption>{civilEditable && <button type="button" onClick={() => edit(next => { next.appearanceImages = next.appearanceImages.filter(entry => entry.id !== image.id) })}>Remover</button>}</figure>)}</div></section>
       </div>
       <p className="sheet-page-disclaimer">{persisted ? 'Salve antes de sair da ficha. Seus dados ficam na sua conta.' : 'Prévia visual: salve antes de sair da ficha. Tudo será descartado ao recarregar ou encerrar a demonstração.'}</p>
     </div>
@@ -201,7 +239,7 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, backHref = '#ficha
         <span>{rollResult.label}</span><strong>{rollResult.total}</strong>
         <small>{rollResult.dice.length}d20: {rollResult.dice.join(', ')} · maior {Math.max(...rollResult.dice)}{rollResult.bonus ? ` + ${rollResult.bonus}` : ''}</small>
       </div>}
-      <small className="sheet-roll-local">Rolagem local · não enviada à mesa.</small>
+      <small className="sheet-roll-local">{onRecordRoll ? 'Rolagem registrada no histórico da mesa.' : 'Rolagem local · não enviada à mesa.'}</small>
     </aside>}
     {masterManaged && grantEditorOpen && activeForm !== 'civil' && <Modal open onClose={() => setGrantEditorOpen(false)} titleId="sheet-grant-title" className="sheet-grant-modal">
       <div className="sheet-panel">

@@ -49,8 +49,9 @@ export interface SheetDetails {
   age: string
   height: string
   portraitDataUrl?: string
+  portraitPath?: string
   appearance: string
-  appearanceImages: { id: string; name: string; dataUrl: string }[]
+  appearanceImages: { id: string; name: string; dataUrl: string; path?: string }[]
   lore: string
   resources: Record<ResourceName, { current: Amount; max: Amount }>
   attributes: Record<AttributeName, { civil: Amount }>
