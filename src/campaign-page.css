@@ -67,3 +67,29 @@
 .campaign-roll-form label { width:125px; }
 .campaign-roll-result { font:500 26px/1 'Cormorant Garamond',Georgia,serif; color:var(--accent-bright); }
 @media (max-width:1100px) { .campaign-shortcuts { grid-template-columns:repeat(2,minmax(0,1fr)); } .campaign-page-layout { grid-template-columns:140px minmax(0,1fr); } .campaign-page-scroll { padding:22px; } }
+
+.campaign-opening-nav { gap: 0; }
+.campaign-opening-nav span { display: block; margin: 0 0 3px; padding: 11px 12px; color: #8e867d; font-size: 11px; }
+.campaign-opening-nav span:first-child { color: var(--accent-bright); border: 1px solid var(--hub-border); border-radius: 5px; background: var(--accent-soft); }
+.campaign-opening-scroll { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; }
+.campaign-opening-card { position: relative; width: min(560px, 100%); padding: 34px 38px 30px; border: 1px solid var(--hub-border-hover); border-radius: 10px; background: radial-gradient(circle at 50% 0, var(--panel-glow), transparent 65%), linear-gradient(140deg, #222224e8, #18191ce8); box-shadow: 0 20px 60px #0003, inset 0 1px 0 #ffffff0b; text-align: center; }
+.campaign-opening-card::before { content: ''; position: absolute; top: -4px; left: calc(50% - 4px); width: 7px; height: 7px; transform: rotate(45deg); border: 1px solid var(--accent-bright); background: #1b1c1e; }
+.campaign-opening-emblem { display: grid; place-items: center; width: 74px; height: 74px; margin: 0 auto 22px; border: 1px solid var(--hub-border-hover); border-radius: 50%; background: radial-gradient(circle, var(--accent-soft), transparent 70%); box-shadow: 0 0 35px var(--panel-glow), inset 0 0 0 7px #ffffff05; }
+.campaign-opening-emblem span { color: var(--accent-bright); font: 400 40px/1 'Cormorant Garamond', Georgia, serif; animation: campaign-opening-turn 7s ease-in-out infinite; }
+.campaign-opening-card .home-overline { color: var(--accent-bright); margin: 0 0 10px; }
+.campaign-opening-card h2 { margin: 0 0 10px; color: #f2e9de; font: 500 29px/1.15 'Cormorant Garamond', Georgia, serif; }
+.campaign-opening-message { max-width: 420px; min-height: 38px; margin: 0 auto; color: #c3b8ac; font-size: 12px; line-height: 1.65; }
+.campaign-opening-track { height: 2px; max-width: 290px; margin: 24px auto 0; overflow: hidden; background: color-mix(in srgb, var(--accent-bright) 20%, transparent); }
+.campaign-opening-track span { display: block; width: 35%; height: 100%; background: var(--accent-bright); box-shadow: 0 0 13px var(--accent-bright); animation: campaign-opening-progress 1.9s ease-in-out infinite alternate; }
+.campaign-opening-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.campaign-opening-card-error { border-color: #d9888866; }
+.campaign-opening-card-error .campaign-opening-message { color: #f0c6c1; }
+.campaign-opening-preview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: min(680px, 100%); }
+.campaign-opening-preview > div { display: grid; gap: 12px; height: 95px; padding: 15px; border: 1px solid var(--hub-border); border-radius: 6px; background: linear-gradient(125deg, var(--panel-glow), #17181aba); }
+.campaign-opening-preview span { color: #a99b8a; font-size: 9px; letter-spacing: 1.3px; }
+.campaign-opening-preview i { display: block; width: 75%; height: 5px; border-radius: 10px; background: #ffffff12; }
+.campaign-opening-preview i:last-child { width: 48%; }
+@keyframes campaign-opening-progress { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@keyframes campaign-opening-turn { 50% { transform: rotate(45deg); text-shadow: 0 0 16px var(--accent-bright); } }
+@media (max-width: 760px) { .campaign-opening .campaign-page-layout { grid-template-columns: 1fr; } .campaign-opening-nav { display: none; } .campaign-opening .campaign-page-header { align-items: flex-start; flex-wrap: wrap; padding: 18px; } .campaign-opening-scroll { justify-content: flex-start; padding: 24px 18px; } .campaign-opening-card { padding: 28px 20px; } .campaign-opening-preview { grid-template-columns: 1fr; } .campaign-opening-preview > div { height: 62px; } .campaign-opening-preview i:last-child { display: none; } }
+@media (prefers-reduced-motion: reduce) { .campaign-opening-emblem span, .campaign-opening-track span { animation: none; } .campaign-opening-track span { width: 100%; opacity: .5; } }

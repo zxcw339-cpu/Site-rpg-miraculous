@@ -30,12 +30,11 @@ export function useAccount() {
       if (event === 'PASSWORD_RECOVERY') { setRecovery(true); window.location.hash = '#nova-senha' }
       if (event === 'SIGNED_OUT') { setProfileState(null); setRecovery(false) }
     })
-    void supabase.auth.initialize().then(async ({ error: initializationError }) => {
-      const { error: sessionError } = await supabase!.auth.getSession()
+    void supabase.auth.initialize().then(({ error: initializationError }) => {
       // Without the PKCE verifier the SDK leaves a code unconsumed. Do not
       // silently discard it or pretend an older cached session is a new login.
       const unconsumedCode = callbackUrl.searchParams.has('code') && new URL(window.location.href).searchParams.has('code')
-      if (active && (initializationError || sessionError || denied || unconsumedCode)) {
+      if (active && (initializationError || denied || unconsumedCode)) {
         setError('Não foi possível confirmar o acesso. O link pode ter expirado; solicite outro e abra no mesmo navegador.')
         setLoading(false)
       }

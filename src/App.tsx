@@ -11,13 +11,14 @@ import { SheetsHub } from './components/SheetsHub'
 import { CampaignHub } from './components/CampaignHub'
 import { CharacterSheetPage } from './components/CharacterSheetPage'
 import { CampaignWorkspacePage } from './components/CampaignWorkspacePage'
+import { CampaignOpeningState } from './components/CampaignOpeningState'
 import { exampleCampaigns, exampleSheets, findPlayerCampaign } from './hub-data'
 import { normalizeCampaignWorkspace } from './campaign-model'
 import { defaultTheme, getTheme, themeStorageKey } from './themes/themes'
 import { PasswordRecovery } from './components/PasswordRecovery'
 import { authConfigured, discordEnabled, supabase } from './auth/client'
 import { useAccount } from './auth/useAccount'
-import { register, requestPasswordReset, saveProfile, signIn, signInDiscord, updatePassword } from './auth/service'
+import { register, requestPasswordReset, saveProfile, setAccountPassword, signIn, signInDiscord, updatePassword } from './auth/service'
 import { createCampaign, createCommunityPost, createSheet, deleteCampaign, deleteSheet, editCampaignMessage, editCommunityPost, getInviteCode, joinCampaign, linkSheet, loadCampaignLogs, loadCampaignMessages, loadCampaignWorkspace, loadGameData, loadSheet, recordCampaignRoll, saveCampaignWorkspace, saveMasterSheetData, saveSheet, saveSheetAsMaster, sendCampaignMessage, subscribeCampaign } from './data/game'
 import type { CampaignLog } from './data/game'
 import type { CampaignRoll } from './campaign-model'
@@ -65,7 +66,6 @@ export default function App() {
   const [sheetLoadedId, setSheetLoadedId] = useState<string | null>(null)
   const [sheetError, setSheetError] = useState('')
   const [sheetRevision, setSheetRevision] = useState(0)
-  const [workspaceLoadingId, setWorkspaceLoadingId] = useState<string | null>(null)
   const [workspaceError, setWorkspaceError] = useState('')
   const [workspaceRevision, setWorkspaceRevision] = useState(0)
   const [campaignLogs, setCampaignLogs] = useState<Record<string, CampaignLog[]>>({})
@@ -135,12 +135,11 @@ export default function App() {
     if (!campaignId || !campaigns.some(item => item.id === campaignId)) return
     let active = true
     setWorkspaceError('')
-    setWorkspaceLoadingId(campaignId)
     void loadCampaignWorkspace(campaignId).then(workspace => {
       if (active) setCampaigns(current => current.map(item => item.id === campaignId ? { ...item, workspace } : item))
     }).catch((cause: unknown) => {
       if (active) setWorkspaceError(cause instanceof Error ? cause.message : 'Não foi possível carregar a campanha.')
-    }).finally(() => { if (active) setWorkspaceLoadingId(null) })
+    })
     if (campaigns.find(item => item.id === campaignId)?.role === 'master') {
       void loadCampaignLogs(campaignId).then(logs => { if (active) setCampaignLogs(current => ({ ...current, [campaignId]: logs })) }).catch(() => { /* A mesa continua disponível mesmo se os registros não carregarem. */ })
     }
@@ -349,8 +348,10 @@ export default function App() {
         <h2>Não foi possível abrir seus dados.</h2><p role="alert">{gameError}</p>
         <button className="login-button" onClick={() => setGameRevision(current => current + 1)}>Tentar novamente</button>
         <button className="secondary-button" onClick={exitPreview} disabled={exitPending}>Sair</button>
-      </section> : isWorkspace ? <WorkspaceShell authenticated={authenticated} page={screen === 'sheet-detail' ? 'sheets' : screen === 'campaign-detail' || screen === 'npc-detail' || screen === 'member-detail' ? 'campaigns' : screen as 'home' | 'sheets' | 'campaigns'} profile={activeProfile ?? { name: fallbackName, bio: '' }} titleRef={titleRef} onProfileChange={updatePreviewProfile} onExit={exitPreview}>
-        {persisted && gameLoadedUserId !== account.session?.user.id ? <div className="hub-page hub-missing" aria-live="polite"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Abrindo seu espaço…</h1><p>Carregando fichas e campanhas.</p></div> : screen === 'sheet-detail' ? (() => {
+      </section> : isWorkspace ? <WorkspaceShell authenticated={authenticated} page={screen === 'sheet-detail' ? 'sheets' : screen === 'campaign-detail' || screen === 'npc-detail' || screen === 'member-detail' ? 'campaigns' : screen as 'home' | 'sheets' | 'campaigns'} profile={activeProfile ?? { name: fallbackName, bio: '' }} titleRef={titleRef} onProfileChange={updatePreviewProfile} onPasswordUpdate={authenticated ? setAccountPassword : undefined} onExit={exitPreview}>
+        {persisted && gameLoadedUserId !== account.session?.user.id ? (screen === 'campaign-detail' || screen === 'npc-detail' || screen === 'member-detail'
+          ? <CampaignOpeningState titleRef={titleRef} onRetry={() => setGameRevision(current => current + 1)} />
+          : <div className="hub-page hub-missing" aria-live="polite"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Abrindo seu espaço…</h1><p>Carregando fichas e campanhas.</p></div>) : screen === 'sheet-detail' ? (() => {
           const sheet = sheets.find(item => item.id === decodeURIComponent(routeHash.slice('#ficha/'.length)))
           if (sheet && persisted && sheetError) return <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Não foi possível abrir a ficha</h1><p role="alert">{sheetError}</p><button className="hub-button" type="button" onClick={() => setSheetRevision(current => current + 1)}>Tentar novamente</button><a className="hub-button" href="#fichas">Voltar às fichas</a></div>
           if (sheet && persisted && sheetLoadedId !== sheet.id) return <div className="hub-page hub-missing" aria-live="polite"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Abrindo ficha…</h1><p>Preparando sua ficha e imagens.</p></div>
@@ -364,8 +365,8 @@ export default function App() {
           const [campaignId, type, encodedNpcId] = routeHash.slice('#campanha/'.length).split('/')
           const campaign = campaigns.find(item => item.id === decodeURIComponent(campaignId))
           if (!campaign) return <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Campanha indisponível</h1><p>Não encontramos esta campanha na sua conta.</p><a className="hub-button" href="#campanhas">Voltar às campanhas</a></div>
-          if (persisted && workspaceError) return <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Não foi possível abrir a mesa</h1><p role="alert">{workspaceError}</p><button className="hub-button" type="button" onClick={() => setWorkspaceRevision(current => current + 1)}>Tentar novamente</button><a className="hub-button" href="#campanhas">Voltar às campanhas</a></div>
-          if (persisted && !campaign.workspace) return <div className="hub-page hub-missing" aria-live="polite"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Abrindo campanha…</h1><p>{workspaceLoadingId === campaign.id ? 'Carregando os dados desta mesa.' : 'Preparando a mesa.'}</p></div>
+          if (persisted && workspaceError) return <CampaignOpeningState key={`${campaign.id}-${workspaceRevision}`} name={campaign.name} isMaster={campaign.role === 'master'} titleRef={titleRef} error={workspaceError} onRetry={() => setWorkspaceRevision(current => current + 1)} />
+          if (persisted && !campaign.workspace) return <CampaignOpeningState key={`${campaign.id}-${workspaceRevision}`} name={campaign.name} isMaster={campaign.role === 'master'} titleRef={titleRef} onRetry={() => setWorkspaceRevision(current => current + 1)} />
           if (type === 'npc' && campaign.role === 'master') {
             const npc = campaign.workspace?.npcs.find(item => item.id === decodeURIComponent(encodedNpcId || ''))
             if (npc) return <CharacterSheetPage key={npc.id} sheet={{ id: npc.id, name: npc.name, campaignId: null, isExample: false, details: npc.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / NPCS E INIMIGOS" pageTitle="Ficha da mesa" masterManaged persisted={persisted} titleRef={titleRef} onRecordRoll={persisted ? (label, count, sides, bonus, mode) => recordRoll(campaign.id, label, count, sides, bonus, mode) : undefined} onSave={async (name, details) => {
@@ -470,7 +471,7 @@ export default function App() {
           <p>PAINEL DE CAMPANHAS</p>
         </div>
 
-        {isWelcome ? <WelcomeScreen authenticated={authenticated} name={activeProfile?.name} photoUrl={activeProfile?.photoUrl} titleRef={titleRef} onEnter={() => { window.location.hash = '#inicio' }} onExit={exitPreview} /> : isRecovery ? <section className="login-card" aria-labelledby="recovery-title">
+        {isWelcome ? <WelcomeScreen authenticated={authenticated} name={activeProfile?.name || fallbackName} photoUrl={activeProfile?.photoUrl} titleRef={titleRef} onEnter={() => { window.location.hash = '#inicio' }} onExit={exitPreview} /> : isRecovery ? <section className="login-card" aria-labelledby="recovery-title">
           <h2 ref={titleRef} id="recovery-title" tabIndex={-1}>{isPassword ? 'Escolha sua nova senha.' : 'Recupere seu acesso.'}</h2>
           {isPassword && !authenticated ? <p className="auth-message">Abra o link recebido por e-mail neste navegador. Se ele expirou, <a href="#recuperar-senha">solicite outro link</a>.</p> : <PasswordRecovery key={screen} mode={isPassword ? 'update' : 'request'} configured={authConfigured} onRequest={requestPasswordReset} onUpdate={async password => { await updatePassword(password); account.setRecovery(false) }} />}
           <p className="registration-return"><a href="#login">Voltar ao login</a></p>

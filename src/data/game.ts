@@ -4,6 +4,7 @@ import type { CampaignCategory, CampaignMedia, CampaignMessage, CampaignNote, Ca
 import type { Campaign, CharacterSheet } from '../hub-data'
 import { emptySheetDetails, normalizeSheetDetails, validateSheetDetails } from '../sheet-model'
 import type { FormGrants, SheetDetails } from '../sheet-model'
+import { normalizeInviteCode } from '../invite-code'
 
 type Row = Record<string, unknown>
 
@@ -41,6 +42,7 @@ const npcBucket = 'rpg-npc-images'
 const imageExtensions: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }
 const mediaExtensions: Record<string, string> = { ...imageExtensions, 'image/gif': 'gif', 'video/mp4': 'mp4', 'video/webm': 'webm' }
 const signedUrlCache = new Map<string, { url: string; until: number }>()
+const campaignOwnerCache = new Map<string, string>()
 
 function validUpload(file: Blob, extensions: Record<string, string>, maxSize: number): string {
   const extension = extensions[file.type]
@@ -209,9 +211,11 @@ export async function loadGameData(): Promise<{ campaigns: Campaign[]; sheets: C
   const campaignRows = rows(campaignResult.data)
   const allSheetRows = rows(sheetResult.data)
   const ownSheets = allSheetRows.filter(row => row.owner_id === currentUserId)
-  const overlays = await loadOverlays(ownSheets.map(row => string(row.id)))
   const campaigns = campaignRows.map(row => campaignFromRow(row, currentUserId))
-  const sheets = ownSheets.map(row => sheetFromRow(row, overlays.get(string(row.id))))
+  // The hub only needs sheet identity and civil data. Master overlays are
+  // fetched when a sheet is opened, avoiding another request before the hub
+  // and campaign links can appear.
+  const sheets = ownSheets.map(row => sheetFromRow(row))
   return { campaigns, sheets }
 }
 
@@ -249,11 +253,11 @@ export async function revokeInviteCode(campaignId: string): Promise<void> {
 }
 
 export async function joinCampaign(code: string): Promise<Campaign> {
-  const normalized = code.trim().toLowerCase()
-  if (!/^[a-f0-9]{32}$/.test(normalized)) throw new Error('Digite o código completo do convite, com 32 caracteres.')
+  const normalized = normalizeInviteCode(code)
   const currentUserId = await userId()
   const { data: campaignId, error: joinError } = await requireSupabase().rpc('rpg_join_campaign_by_code', { p_code: normalized })
-  if (joinError || typeof campaignId !== 'string') throw new Error('Código de mesa inválido. Confira com o mestre.')
+  if (string(object(joinError).code) === '22023') throw new Error('Você já é o mestre desta campanha.')
+  if (joinError || typeof campaignId !== 'string') throw new Error('Código inválido ou muitas tentativas. Confira com o mestre e, se necessário, aguarde 15 minutos.')
   const { data, error } = await requireSupabase().from('rpg_campaigns').select(campaignColumns).eq('id', campaignId).single()
   if (error || !data) throw problem(error, 'Você entrou na campanha, mas não foi possível carregar seus dados. Atualize a página.')
   return campaignFromRow(object(data), currentUserId)
@@ -363,9 +367,13 @@ async function messageRows(campaignId: string, ownerId: string): Promise<Campaig
 }
 
 export async function loadCampaignMessages(campaignId: string): Promise<CampaignMessage[]> {
+  const cachedOwner = campaignOwnerCache.get(campaignId)
+  if (cachedOwner) return messageRows(campaignId, cachedOwner)
   const { data, error } = await requireSupabase().from('rpg_campaigns').select('owner_id').eq('id', campaignId).single()
   if (error || !data) throw problem(error, 'Não foi possível atualizar o chat desta campanha.')
-  return messageRows(campaignId, string(object(data).owner_id))
+  const ownerId = string(object(data).owner_id)
+  campaignOwnerCache.set(campaignId, ownerId)
+  return messageRows(campaignId, ownerId)
 }
 
 export async function loadCampaignWorkspace(campaignId: string): Promise<CampaignWorkspace> {
@@ -374,41 +382,49 @@ export async function loadCampaignWorkspace(campaignId: string): Promise<Campaig
   const campaignResult = await client.from('rpg_campaigns').select(campaignColumns).eq('id', campaignId).single()
   if (campaignResult.error || !campaignResult.data) throw problem(campaignResult.error, 'Campanha não encontrada ou sem acesso.')
   const campaign = object(campaignResult.data)
+  campaignOwnerCache.set(campaignId, string(campaign.owner_id))
   const isMaster = campaign.owner_id === currentUserId
-  const [masterResult, mediaResult, notesResult, categoryResult, messages, rollResult] = await Promise.all([
+  const [masterResult, mediaResult, notesResult, categoryResult, messages, rollResult,
+    participantsResult, memberSheetsResult] = await Promise.all([
     isMaster ? client.from('rpg_campaign_master_data').select('data').eq('campaign_id', campaignId).maybeSingle() : Promise.resolve({ data: null, error: null }),
     client.from('rpg_campaign_media').select('id,title,subtitle,description,image_path,media_url,media_type,category_id,author_id,shared').eq('campaign_id', campaignId).order('created_at'),
     client.from('rpg_campaign_notes').select('id,title,body,category_id,author_id,shared').eq('campaign_id', campaignId).order('created_at'),
     client.from('rpg_campaign_categories').select('id,name,description,sort_order').eq('campaign_id', campaignId).order('sort_order'),
     messageRows(campaignId, string(campaign.owner_id)),
     client.from('rpg_campaign_rolls').select('id,label,expression,dice,result,author_id,created_at').eq('campaign_id', campaignId).order('created_at', { ascending: false }).limit(200),
+    isMaster ? client.rpc('rpg_campaign_participants', { p_campaign_id: campaignId }) : Promise.resolve({ data: [], error: null }),
+    isMaster ? client.from('rpg_sheets').select(sheetColumns).eq('campaign_id', campaignId) : Promise.resolve({ data: [], error: null }),
   ])
   if (masterResult.error) throw problem(masterResult.error, 'Não foi possível carregar o painel do mestre.')
   if (mediaResult.error) throw problem(mediaResult.error, 'Não foi possível carregar as imagens da comunidade.')
   if (notesResult.error) throw problem(notesResult.error, 'Não foi possível carregar as anotações da comunidade.')
   if (categoryResult.error) throw problem(categoryResult.error, 'Não foi possível carregar as categorias da comunidade.')
   if (rollResult.error) throw problem(rollResult.error, 'Não foi possível carregar o histórico das rolagens.')
+  if (participantsResult.error) throw problem(participantsResult.error, 'Não foi possível carregar os participantes da campanha.')
+  if (memberSheetsResult.error) throw problem(memberSheetsResult.error, 'Não foi possível carregar as fichas dos participantes.')
   const privateData = isMaster ? normalizeCampaignWorkspace(object(object(masterResult.data).data)) : emptyCampaignWorkspace()
-  if (isMaster) privateData.npcs = await hydrateNpcs(privateData.npcs)
+  const memberSheets = rows(memberSheetsResult.data)
+  const memberSheetPromise = isMaster
+    ? loadOverlays(memberSheets.map(row => string(row.id))).then(overlays =>
+        hydrateSheets(memberSheets.map(row => sheetFromRow(row, overlays.get(string(row.id))))))
+    : Promise.resolve([] as CharacterSheet[])
+  const [npcs, media, hydratedSheets] = await Promise.all([
+    isMaster ? hydrateNpcs(privateData.npcs) : Promise.resolve(privateData.npcs),
+    hydrateMedia(rows(mediaResult.data).map(mediaFromRow)),
+    memberSheetPromise,
+  ])
+  privateData.npcs = npcs
   const workspace: CampaignWorkspace = {
     ...privateData,
     categories: rows(categoryResult.data).map(categoryFromRow),
-    media: await hydrateMedia(rows(mediaResult.data).map(mediaFromRow)),
+    media,
     notes: rows(notesResult.data).map(noteFromRow),
     messages,
     rolls: rows(rollResult.data).map(rollFromRow),
   }
   if (isMaster) {
-    const { data, error } = await client.rpc('rpg_campaign_participants', { p_campaign_id: campaignId })
-    if (error) throw problem(error, 'Não foi possível carregar os participantes da campanha.')
-    const participants = rows(data)
-    const { data: memberSheetsData, error: memberSheetsError } = await client.from('rpg_sheets').select(sheetColumns).eq('campaign_id', campaignId)
-    if (memberSheetsError) throw problem(memberSheetsError, 'Não foi possível carregar as fichas dos participantes.')
-    const memberSheets = rows(memberSheetsData)
-    const overlays = await loadOverlays(memberSheets.map(row => string(row.id)))
-    const hydratedSheets = await hydrateSheets(memberSheets.map(row => sheetFromRow(row, overlays.get(string(row.id)))))
     const sheetByOwner = new Map(memberSheets.map((row, index) => [string(row.owner_id), hydratedSheets[index]]))
-    workspace.members = participants.map(participant => {
+    workspace.members = rows(participantsResult.data).map(participant => {
       const sheet = sheetByOwner.get(string(participant.user_id))
       return {
         id: string(participant.user_id), name: string(participant.display_name) || string(participant.username) || 'Jogador',
@@ -709,6 +725,16 @@ export function subscribeCampaign(campaignId: string, onChange: (table: string) 
   return () => { void client.removeChannel(channel) }
 }
 
+async function cleanupFilesAfterDeletion(bucketName: string, paths: string[]): Promise<void> {
+  if (!paths.length) return
+  try {
+    const { error } = await requireSupabase().storage.from(bucketName).remove(paths)
+    if (error) console.warn('O registro foi excluído; a limpeza de arquivos antigos não foi concluída.', error)
+  } catch (error) {
+    console.warn('O registro foi excluído; a limpeza de arquivos antigos não foi concluída.', error)
+  }
+}
+
 export async function deleteSheet(sheetId: string): Promise<void> {
   const currentUserId = await userId()
   const client = requireSupabase()
@@ -719,10 +745,7 @@ export async function deleteSheet(sheetId: string): Promise<void> {
   const paths = [details.portraitPath, ...details.appearanceImages.map(image => image.path)].filter((path): path is string => Boolean(path))
   const { data, error } = await client.from('rpg_sheets').delete().eq('id', sheetId).select('id').single()
   if (error || !data) throw problem(error, 'Não foi possível excluir a ficha.')
-  if (paths.length) {
-    // The row is gone; image cleanup is best effort and never reverses the deletion.
-    await client.storage.from(sheetBucket).remove(paths)
-  }
+  await cleanupFilesAfterDeletion(sheetBucket, paths)
 }
 
 export async function deleteCampaign(campaignId: string): Promise<void> {
@@ -740,8 +763,8 @@ export async function deleteCampaign(campaignId: string): Promise<void> {
     .flatMap(npc => characterImagePaths(npc.details))
   const { data, error } = await client.from('rpg_campaigns').delete().eq('id', campaignId).select('id').single()
   if (error || !data) throw problem(error, 'Apenas o mestre pode excluir esta mesa.')
-  if (paths.length) {
-    await client.storage.from(mediaBucket).remove(paths)
-  }
-  if (npcPaths.length) await client.storage.from(npcBucket).remove(npcPaths)
+  await Promise.all([
+    cleanupFilesAfterDeletion(mediaBucket, paths),
+    cleanupFilesAfterDeletion(npcBucket, npcPaths),
+  ])
 }

@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { normalizeUsername, validateRegistration } from '../auth/validation'
 import type { RegistrationErrors, RegistrationInput } from '../auth/validation'
+import type { RegistrationOutcome } from '../auth/registration'
 import { ArrowIcon, DiscordIcon, EyeIcon, UserIcon } from './Icons'
 
 type RegistrationFormProps = {
   configured: boolean
   discordEnabled: boolean
-  onRegister: (input: RegistrationInput) => Promise<string | void>
+  onRegister: (input: RegistrationInput) => Promise<RegistrationOutcome>
   onDiscord: () => Promise<void>
 }
 
@@ -22,10 +23,15 @@ export function RegistrationForm({ configured, discordEnabled, onRegister, onDis
   const [confirmationVisible, setConfirmationVisible] = useState(false)
   const [errors, setErrors] = useState<RegistrationErrors>({})
   const [feedback, setFeedback] = useState('')
-  const [success, setSuccess] = useState('')
+  const [confirmationNotice, setConfirmationNotice] = useState('')
   const [pending, setPending] = useState<'registration' | 'discord' | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
+  const feedbackRef = useRef<HTMLParagraphElement>(null)
+  const confirmationRef = useRef<HTMLHeadingElement>(null)
   const busyRef = useRef(false)
+
+  useEffect(() => { if (feedback) feedbackRef.current?.focus() }, [feedback])
+  useEffect(() => { if (confirmationNotice) confirmationRef.current?.focus() }, [confirmationNotice])
 
   function clearPasswords() {
     setPassword('')
@@ -38,7 +44,7 @@ export function RegistrationForm({ configured, discordEnabled, onRegister, onDis
     event.preventDefault()
     if (!configured || busyRef.current) return
     setFeedback('')
-    setSuccess('')
+    setConfirmationNotice('')
     const input = { username: normalizeUsername(username), name: name.trim(), email: email.trim(), password, bio: bio.trim() }
     const nextErrors = validateRegistration(input, confirmation)
     setErrors(nextErrors)
@@ -47,8 +53,9 @@ export function RegistrationForm({ configured, discordEnabled, onRegister, onDis
     busyRef.current = true
     setPending('registration')
     try {
-      const message = await onRegister(input)
-      if (message) setSuccess(message)
+      const result = await onRegister(input)
+      if (result.kind === 'confirmation') setConfirmationNotice(result.message)
+      else if (result.kind !== 'authenticated') setFeedback(result.message)
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Não foi possível criar sua conta. Tente novamente.')
     } finally {
@@ -63,7 +70,7 @@ export function RegistrationForm({ configured, discordEnabled, onRegister, onDis
     busyRef.current = true
     setPending('discord')
     setFeedback('')
-    setSuccess('')
+    setConfirmationNotice('')
     clearPasswords()
     try {
       await onDiscord()
@@ -74,6 +81,17 @@ export function RegistrationForm({ configured, discordEnabled, onRegister, onDis
       busyRef.current = false
     }
   }
+
+  if (confirmationNotice) return <div className="registration-result" role="status">
+    <div className="registration-avatar-placeholder" aria-hidden="true"><UserIcon /></div>
+    <h3 ref={confirmationRef} tabIndex={-1}>Confirme seu e-mail</h3>
+    <p>{confirmationNotice}</p>
+    <p className="field-hint">Não chegou? Verifique a pasta de spam e o endereço informado. O cadastro só termina após a confirmação.</p>
+    <div className="registration-result-actions">
+      <a className="login-button" href="#login">Ir para o login <ArrowIcon /></a>
+      <button type="button" className="secondary-button" onClick={() => setConfirmationNotice('')}>Usar outro e-mail</button>
+    </div>
+  </div>
 
   return <form ref={formRef} className="registration-form" onSubmit={submit} noValidate aria-busy={Boolean(pending)} aria-describedby={!configured ? 'registration-unavailable' : undefined}>
     <aside className="registration-profile" aria-label="Seu perfil">
@@ -129,8 +147,7 @@ export function RegistrationForm({ configured, discordEnabled, onRegister, onDis
         {errors.bio && <p id="register-bio-error" className="field-error">{errors.bio}</p>}
       </div>
       <div className="registration-submit">
-        {feedback && <p className="auth-feedback auth-feedback-error" role="alert">{feedback}</p>}
-        {success && <p className="auth-feedback auth-feedback-success" role="status">{success}</p>}
+        {feedback && <p ref={feedbackRef} className="auth-feedback auth-feedback-error" role="alert" tabIndex={-1}>{feedback}</p>}
         <button className="login-button" type="submit" disabled={!configured || Boolean(pending)}><span>{pending === 'registration' ? 'Criando conta…' : 'Criar conta'}</span><ArrowIcon /></button>
         <div className="auth-alternative"><span>ou</span></div>
         <button className="discord-button" type="button" onClick={registerWithDiscord} disabled={!configured || !discordEnabled || Boolean(pending)} aria-describedby={!discordEnabled ? 'register-discord-note' : undefined}><DiscordIcon /><span>{pending === 'discord' ? 'Abrindo Discord…' : 'Continuar com Discord'}</span></button>

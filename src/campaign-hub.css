@@ -5,13 +5,12 @@
 .campaign-invite-example { display: flex; flex-direction: column; gap: 9px; margin: 21px 0; padding: 17px; border: 1px solid var(--hub-border); border-radius: 7px; background: var(--accent-soft); color: var(--hub-ink); font-size: 12px; line-height: 1.7; text-align: center; }
 .campaign-invite-example > strong { color: var(--accent-bright); font-size: 19px; font-weight: 500; letter-spacing: 5px; }
 .field-group .campaign-invite-input { font-size: 20px; letter-spacing: 7px; text-align: center; }
-.field-group .campaign-invite-input-real { font-size: 13px; letter-spacing: .08em; text-align: left; }
 .campaign-invite-share { margin: 18px 0 22px; padding: 16px; border: 1px solid var(--hub-border); border-radius: 7px; background: var(--accent-soft); text-align: left; }
 .campaign-invite-share .eyebrow { margin: 0 0 8px; }
 .campaign-invite-share .modal-description { margin: 0 0 13px; }
 .campaign-invite-share .hub-demo-note { margin: 0; padding: 0; border: 0; }
 .campaign-invite-copy-row { display: flex; align-items: center; gap: 9px; }
-.campaign-invite-copy-row code { display: block; flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--hub-border); border-radius: 5px; color: #eee4d9; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; user-select: all; }
+.campaign-invite-copy-row code { display: block; flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--hub-border); border-radius: 5px; color: #eee4d9; font-size: 20px; letter-spacing: .16em; text-align: center; line-height: 1.5; overflow-wrap: anywhere; user-select: all; }
 .campaign-invite-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
 .campaign-delete-actions { margin-top: 22px; padding-top: 15px; border-top: 1px solid var(--hub-border); text-align: left; }
 .campaign-delete-actions > button:not(.hub-button) { border: 0; padding: 6px 0; color: #d7a7a1; background: transparent; font: inherit; font-size: 11px; text-decoration: underline; cursor: pointer; }

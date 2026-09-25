@@ -11,6 +11,7 @@ interface WorkspaceShellProps {
   profile: HomeProfileData
   titleRef: RefObject<HTMLHeadingElement | null>
   onProfileChange: (changes: HomeProfileChanges) => void | Promise<void>
+  onPasswordUpdate?: (password: string) => Promise<void>
   onExit: () => void
   authenticated?: boolean
 }
@@ -24,7 +25,7 @@ function NavigationIcon({ kind }: { kind: 'menu' | 'home' | 'sheets' | 'campaign
   </svg>
 }
 
-export function WorkspaceShell({ page, children, profile, titleRef, onProfileChange, onExit, authenticated = false }: WorkspaceShellProps) {
+export function WorkspaceShell({ page, children, profile, titleRef, onProfileChange, onPasswordUpdate, onExit, authenticated = false }: WorkspaceShellProps) {
   const [expanded, setExpanded] = useState(false)
   const links = [
     { page: 'home', hash: '#inicio', label: 'Início' },
@@ -43,7 +44,7 @@ export function WorkspaceShell({ page, children, profile, titleRef, onProfileCha
           <NavigationIcon kind={link.page} /><span className="home-nav-label" aria-hidden="true">{link.label}</span>
         </a>)}
       </nav>
-      <div className="home-sidebar-profile"><HomeProfile profile={profile} onUpdate={onProfileChange} onExit={onExit} authenticated={authenticated} /></div>
+      <div className="home-sidebar-profile"><HomeProfile profile={profile} onUpdate={onProfileChange} onPasswordUpdate={onPasswordUpdate} onExit={onExit} authenticated={authenticated} /></div>
     </aside>
     <div className="home-canvas">{children}</div>
   </section>

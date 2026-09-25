@@ -23,6 +23,7 @@ export interface HomeProfileChanges {
 interface HomeProfileProps {
   profile: HomeProfileData
   onUpdate: (changes: HomeProfileChanges) => void | Promise<void>
+  onPasswordUpdate?: (password: string) => Promise<void>
   onExit: () => void
   authenticated?: boolean
 }
@@ -31,12 +32,13 @@ const photoTypes = new Set(['image/png', 'image/jpeg', 'image/webp'])
 const photoLimit = 5 * 1024 * 1024
 const usernamePattern = /^[a-z0-9][a-z0-9_.-]{2,31}$/
 
-export function HomeProfile({ profile, onUpdate, onExit, authenticated = false }: HomeProfileProps) {
+export function HomeProfile({ profile, onUpdate, onPasswordUpdate, onExit, authenticated = false }: HomeProfileProps) {
   const id = useId()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLElement>(null)
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [passwordOpen, setPasswordOpen] = useState(false)
   const [position, setPosition] = useState({ left: 78, bottom: 28 })
   const [notice, setNotice] = useState('')
   const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | undefined>()
@@ -116,6 +118,11 @@ export function HomeProfile({ profile, onUpdate, onExit, authenticated = false }
           onExit()
         }}>Sair</button>
       </div>
+      {authenticated && onPasswordUpdate && <button className="home-profile-password" type="button" onClick={() => {
+        popoverRef.current?.hidePopover()
+        setNotice('')
+        setPasswordOpen(true)
+      }}>Definir ou alterar senha para entrar também pelo e-mail</button>}
     </section>
 
     {notice && <p className="home-profile-saved" role="status">{notice}</p>}
@@ -124,7 +131,78 @@ export function HomeProfile({ profile, onUpdate, onExit, authenticated = false }
       setNotice(authenticated ? 'Perfil salvo na sua conta.' : 'Perfil atualizado nesta prévia. As alterações são temporárias.')
       closeEditor()
     }} />}
+    {passwordOpen && onPasswordUpdate && <PasswordAccessModal onClose={() => {
+      setPasswordOpen(false)
+      requestAnimationFrame(() => triggerRef.current?.focus())
+    }} onSave={async password => {
+      await onPasswordUpdate(password)
+      setPasswordOpen(false)
+      setNotice('Senha salva. Você pode entrar pelo e-mail e, se escolher um nome de usuário, também por ele.')
+      requestAnimationFrame(() => triggerRef.current?.focus())
+    }} />}
   </div>
+}
+
+function PasswordAccessModal({ onClose, onSave }: { onClose: () => void; onSave: (password: string) => Promise<void> }) {
+  const id = useId()
+  const [password, setPassword] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const busyRef = useRef(false)
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const confirmationRef = useRef<HTMLInputElement>(null)
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (busyRef.current) return
+    setError('')
+    if (password.length < 8 || password.length > 256) {
+      setError('Use uma senha de 8 a 256 caracteres.')
+      passwordRef.current?.focus()
+      return
+    }
+    if (password !== confirmation) {
+      setError('As senhas precisam ser iguais.')
+      confirmationRef.current?.focus()
+      return
+    }
+    busyRef.current = true
+    setSaving(true)
+    try {
+      await onSave(password)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar a senha. Tente novamente.')
+    } finally {
+      setPassword('')
+      setConfirmation('')
+      setSaving(false)
+      busyRef.current = false
+    }
+  }
+
+  return <Modal open onClose={() => { if (!busyRef.current) onClose() }} titleId={`${id}-title`} descriptionId={`${id}-note`} className="home-profile-modal">
+    <p className="home-profile-kicker">ACESSO À CONTA</p>
+    <h2 id={`${id}-title`}>Entrar também com senha</h2>
+    <p className="home-profile-note" id={`${id}-note`}>Se você entrou pelo Discord, esta senha será adicionada à mesma conta. Depois poderá usar seu e-mail e senha. Um nome de usuário escolhido em “Editar perfil” também servirá para entrar com essa senha.</p>
+    <form className="home-profile-form" onSubmit={submit} noValidate aria-busy={saving}>
+      <fieldset className="home-profile-fields" disabled={saving}>
+        <div className="home-profile-field">
+          <label htmlFor={`${id}-password`}>Nova senha</label>
+          <input ref={passwordRef} id={`${id}-password`} type="password" minLength={8} maxLength={256} autoComplete="new-password" value={password} onChange={event => { setPassword(event.target.value); setError('') }} />
+        </div>
+        <div className="home-profile-field">
+          <label htmlFor={`${id}-confirmation`}>Confirme a senha</label>
+          <input ref={confirmationRef} id={`${id}-confirmation`} type="password" maxLength={256} autoComplete="new-password" value={confirmation} onChange={event => { setConfirmation(event.target.value); setError('') }} />
+        </div>
+        {error && <p className="home-profile-error" role="alert">{error}</p>}
+        <div className="home-profile-form-actions">
+          <button className="home-profile-cancel" type="button" onClick={onClose}>Cancelar</button>
+          <button className="home-profile-apply" type="submit" disabled={saving}>{saving ? 'Salvando…' : 'Salvar senha'}</button>
+        </div>
+      </fieldset>
+    </form>
+  </Modal>
 }
 
 function ProfileEditor({ profile, authenticated, onClose, onApply }: {

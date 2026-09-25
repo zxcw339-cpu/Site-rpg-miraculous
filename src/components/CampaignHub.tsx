@@ -210,8 +210,8 @@ function CampaignInviteDialog({ persisted, alreadyJoined, onClose, onJoin }: { p
     event.preventDefault()
     if (pending || (!persisted && alreadyJoined)) return
     const enteredCode = code.trim()
-    if (!enteredCode || (!persisted && enteredCode.length !== 6)) {
-      setError(persisted ? 'Digite o código enviado pelo mestre.' : 'Digite os 6 dígitos do código de demonstração.')
+    if (!/^[0-9]{6}$/.test(enteredCode) && !(persisted && /^[a-f0-9]{32}$/i.test(enteredCode))) {
+      setError('Digite os 6 dígitos do convite enviado pelo mestre.')
       codeRef.current?.focus()
       return
     }
@@ -235,7 +235,7 @@ function CampaignInviteDialog({ persisted, alreadyJoined, onClose, onJoin }: { p
     <div className="modal-emblem"><HubIcon kind="key" /></div>
     <p className="eyebrow">UM LUGAR À MESA</p>
     <h2 id={`${id}-title`}>Entrar por convite</h2>
-    <p className="modal-description" id={`${id}-description`}>{persisted ? 'Peça o código de convite ao mestre da campanha e digite-o abaixo.' : 'Os convites terão 6 dígitos. Nesta etapa, experimente o fluxo com uma campanha de exemplo.'}</p>
+    <p className="modal-description" id={`${id}-description`}>{persisted ? 'Peça ao mestre o código de 6 dígitos desta mesa.' : 'Os convites têm 6 dígitos. Nesta etapa, experimente o fluxo com uma campanha de exemplo.'}</p>
     {!persisted && alreadyJoined ? <>
       <p className="campaign-invite-example" role="status">A campanha de convite já está em <strong>Jogando</strong> nesta prévia.</p>
       <div className="hub-form-actions"><button type="button" className="hub-button hub-button-primary" onClick={onClose}>Voltar às campanhas</button></div>
@@ -243,8 +243,8 @@ function CampaignInviteDialog({ persisted, alreadyJoined, onClose, onJoin }: { p
       {!persisted && <p className="campaign-invite-example" id={`${id}-example`}><span>Código de demonstração</span><strong>123456</strong></p>}
       <div className="field-group">
         <label htmlFor={`${id}-code`}>Código do convite</label>
-        <input ref={codeRef} id={`${id}-code`} className={persisted ? 'campaign-invite-input campaign-invite-input-real' : 'campaign-invite-input'} type="text" inputMode={persisted ? 'text' : 'numeric'} pattern={persisted ? undefined : '[0-9]{6}'} maxLength={persisted ? 128 : 6} disabled={pending} required value={code} placeholder={persisted ? 'Código enviado pelo mestre' : '000000'} aria-invalid={Boolean(error)} aria-describedby={!persisted ? `${id}-example${error ? ` ${id}-error` : ''}` : error ? `${id}-error` : undefined} onChange={event => {
-          setCode(persisted ? event.target.value.slice(0, 128) : event.target.value.replace(/\D/g, '').slice(0, 6))
+        <input ref={codeRef} id={`${id}-code`} className="campaign-invite-input" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={persisted ? 32 : 6} disabled={pending} required value={code} placeholder="000000" aria-invalid={Boolean(error)} aria-describedby={!persisted ? `${id}-example${error ? ` ${id}-error` : ''}` : error ? `${id}-error` : undefined} onChange={event => {
+          setCode(persisted ? event.target.value.replace(/[^a-f0-9]/gi, '').slice(0, 32) : event.target.value.replace(/\D/g, '').slice(0, 6))
           setError('')
         }} />
         {error && <p className="field-error" id={`${id}-error`} role="alert">{error}</p>}

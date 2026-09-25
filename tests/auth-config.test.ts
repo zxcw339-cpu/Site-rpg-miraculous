@@ -23,4 +23,5 @@ test('auth errors never repeat raw database, credentials or provider details', (
   assert.match(authErrorMessage({ code: 'invalid_credentials' }), /incorretos/)
   assert.match(authErrorMessage({ status: 429 }), /Muitas tentativas/)
   assert.match(authErrorMessage({ code: '23505' }), /nome de usuário/)
+  assert.match(authErrorMessage({ code: 'user_already_exists' }), /Discord/)
 })

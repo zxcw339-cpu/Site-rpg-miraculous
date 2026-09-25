@@ -1,5 +1,6 @@
 import { requireRedirectStorage, requireSupabase } from './client'
 import { appReturnUrl, authErrorMessage } from './config'
+import { registrationOutcome } from './registration'
 
 export interface AccountProfile {
   name: string
@@ -40,7 +41,7 @@ export async function register(input: { username: string; name: string; email: s
     },
   })
   if (error) throw new Error(authErrorMessage(error, 'Não foi possível criar a conta. Confira os campos, tente outro nome de usuário ou entre se já possui uma conta.'))
-  return data.session ? undefined : 'Confira seu e-mail para confirmar o cadastro. Se já tem uma conta, entre ou recupere sua senha. Abra o link neste mesmo navegador.'
+  return registrationOutcome(data)
 }
 
 export async function signInDiscord() {
@@ -58,6 +59,11 @@ export async function requestPasswordReset(email: string) {
 export async function updatePassword(password: string) {
   const { error } = await requireSupabase().auth.updateUser({ password })
   if (error) throw new Error(authErrorMessage(error, 'O link pode ter expirado. Solicite uma nova recuperação de senha.'))
+}
+
+export async function setAccountPassword(password: string) {
+  const { error } = await requireSupabase().auth.updateUser({ password })
+  if (error) throw new Error(authErrorMessage(error, 'Não foi possível definir a senha nesta conta. Tente novamente ou use a recuperação por e-mail.'))
 }
 
 export async function loadProfile(userId: string): Promise<AccountProfile> {

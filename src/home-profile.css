@@ -19,6 +19,8 @@
 .home-profile-edit:hover { border-color: var(--accent-bright); background: var(--accent-soft); }
 .home-profile-exit { padding-inline: 15px; border: 1px solid transparent; background: transparent; color: #c7bdb5; }
 .home-profile-exit:hover { background: #ffffff07; color: #f0e6dc; }
+.home-profile-password { width: 100%; margin-top: 10px; border: 1px solid #736a6259; border-radius: 5px; padding: 10px 12px; background: transparent; color: #d7c9bc; font-size: 11px; line-height: 1.5; text-align: left; }
+.home-profile-password:hover { border-color: var(--accent-bright); background: var(--accent-soft); }
 
 .home-profile-modal { width: min(580px, calc(100vw - 48px)); padding: 39px 36px 32px; text-align: left; }
 .home-profile-modal h2 { font-size: 34px; margin-bottom: 10px; }

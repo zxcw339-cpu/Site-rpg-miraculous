@@ -1,5 +1,17 @@
 # Publicação do site
 
+## Correção de acesso, cadastro e convites — 25/09/2026
+
+A migração aditiva [202609250002_rpg_identity_invites.sql](supabase/migrations/202609250002_rpg_identity_invites.sql) já foi aplicada ao projeto hospedado `MiraculousRPGDB`, com retorno **Success**. Ela corrige a exclusão de mesas que contêm fichas de jogadores e acrescenta um código de convite permanente de seis dígitos. Os convites antigos de 32 caracteres continuam aceitos. A conferência após a aplicação mostrou 3 mesas, 3 fichas e 10 mensagens preservadas, com 3 códigos curtos distintos. **Não execute esta migração novamente.**
+
+A migração complementar [202609250003_rpg_invite_rate_limit.sql](supabase/migrations/202609250003_rpg_invite_rate_limit.sql) também foi aplicada ao projeto hospedado. Ela impede que um convite válido zere o limite de tentativas incorretas. A leitura posterior confirmou a regra corrigida e as mesmas 3 mesas, 3 fichas e 10 mensagens. **Não execute esta migração novamente.**
+
+As permissões de mestre e jogador usam o UUID da conta do Supabase, não o nome do perfil. O mesmo UUID acompanha o login por nome ou e-mail e senha da mesma conta. Uma conta antiga criada separadamente pelo Discord pode ter outro UUID; nomes iguais não juntam contas. Para usar senha na própria conta do Discord, entre por Discord e escolha **Perfil → Definir ou alterar senha**. A entrada por nome também exige um nome de usuário definido no perfil. Não migre dados entre contas pelo nome.
+
+O cadastro por e-mail exige confirmação pelo link recebido antes de abrir as boas-vindas. Quando o endereço já pertence a uma conta, a tela informa que nenhuma conta nova foi criada e oferece entrada por Discord ou recuperação da senha. O carregamento de campanhas agora mostra a mesa e uma opção de tentar novamente se houver erro ou demora. Nenhum usuário precisa alterar as configurações de Discord, SMTP ou GitHub para esta correção.
+
+Para conferir a versão publicada, abra o [site](https://zxcw339-cpu.github.io/Site-rpg-miraculous/) e entre na conta de mestre. No cartão de uma mesa, confira o código de seis dígitos. Teste exclusão definitiva somente com uma mesa descartável: fichas dos jogadores devem continuar existindo, agora sem vínculo. Uma validação com uma conta de jogador real ainda é necessária para confirmar o fluxo completo entre contas.
+
 ## Atualização de 25/09/2026
 
 O site público está em [GitHub Pages](https://zxcw339-cpu.github.io/Site-rpg-miraculous/) e usa o projeto Supabase existente `MiraculousRPGDB`. A configuração de login, Discord e SMTP permanece no projeto; não precisa ser refeita a cada versão.

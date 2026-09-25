@@ -26,6 +26,7 @@ export function authErrorMessage(error: unknown, fallback = 'Não foi possível 
   if (code === 'same_password') return 'Escolha uma senha diferente da atual.'
   if (status === 429 || code === 'over_request_rate_limit' || code === 'over_email_send_rate_limit') return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.'
   if (code === '23505') return 'Esse nome de usuário já está em uso. Escolha outro.'
+  if (code === 'user_already_exists' || code === 'email_exists') return 'Esse e-mail já tem uma conta. Entre com e-mail e senha ou com Discord. Se a conta veio do Discord, defina uma senha no perfil para usar as duas formas de entrada.'
   if (code === 'signup_disabled') return 'O cadastro está temporariamente indisponível.'
   if (code === 'email_address_not_authorized') return 'O envio de e-mails ainda está em configuração. Por enquanto, use o Discord.'
   return fallback
