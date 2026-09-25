@@ -6,6 +6,7 @@
 - `npm.cmd test`: 27 testes aprovados. `npm.cmd run build`: TypeScript/Vite aprovados; permanece o aviso de pacote JavaScript acima de 500 kB. O teste isolado de PostgreSQL/PGlite passou em 68 afirmações, incluindo limites de acesso de ex-participantes, permissão de edição do mestre e registros. A simulação não substitui um teste com duas contas no Supabase hospedado.
 - Na demonstração local, foram criados e editados um item da mesa e uma categoria da Comunidade; a exclusão da categoria preservou as publicações. Também criei uma ficha, editei gênero e atributo e salvei. A prévia local não dispõe das chaves do Supabase, portanto o upload remoto e o tempo real entre duas contas ainda precisam de teste separado.
 - O desenho mobile será próprio; [MOBILE.md](MOBILE.md) registra fluxos e verificações para essa etapa. A interface atual continua focada em PC.
+- O commit `6387371` foi enviado à branch `main`. A [execução 6 do GitHub Actions](https://github.com/zxcw339-cpu/Site-rpg-miraculous/actions/runs/36156418025) terminou com build e deploy bem-sucedidos. O site público abriu a tela de login, sem erros no console; seu `index-DkwjKPzL.js` coincide com o arquivo listado no build remoto. Não foram usados dados de login reais nesta conferência.
 
 ## Persistência de campanhas e fichas — 24/09/2026
 
