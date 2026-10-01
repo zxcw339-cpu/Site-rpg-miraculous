@@ -1,9 +1,20 @@
 import { WebFrame } from './WebFrame'
 import { LanternAtmosphere } from './LanternAtmosphere'
+import { ValkyrieAtmosphere } from './ValkyrieAtmosphere'
+import type { ThemeDefinition } from '../themes/themes'
+import { MobileLandingOrnaments } from './MobileLandingOrnaments'
 
 /** Original architectural frame and decorative silver strands. */
-export function Atmosphere({ variant = 'threads' }: { variant?: 'threads' | 'lanterns' }) {
+export function Atmosphere({ variant = 'threads', landing = false }: { variant?: ThemeDefinition['atmosphere']; landing?: boolean }) {
+  return <>
+    <DesktopAtmosphere variant={variant} />
+    {landing && <div className="mobile-landing-background" aria-hidden="true"><MobileLandingOrnaments variant={variant} /></div>}
+  </>
+}
+
+function DesktopAtmosphere({ variant }: { variant: ThemeDefinition['atmosphere'] }) {
   if (variant === 'lanterns') return <LanternAtmosphere />
+  if (variant === 'feathers') return <ValkyrieAtmosphere />
   return (
     <div
       className="atmosphere"

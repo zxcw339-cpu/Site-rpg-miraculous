@@ -1,0 +1,52 @@
+.mobile-landing-background, .mobile-landing-ornaments { display: none; }
+
+@media (max-width: 900px) {
+  .app[data-decoration-layout='entry'] > .atmosphere,
+  .app[data-decoration-layout='home'] > .atmosphere { display: none; }
+  .mobile-landing-background { display: block; position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; user-select: none; }
+  .mobile-landing-ornaments { display: block; position: absolute; top: calc(58px + env(safe-area-inset-top)); left: 50%; width: min(100%, 480px); height: 210px; transform: translateX(-50%); overflow: hidden; pointer-events: none; user-select: none; mask-image: linear-gradient(#000 55%, transparent); }
+  .mobile-landing-ornaments > .mobile-ornament-art { display: none; position: absolute; inset: 0; width: 100%; height: auto; }
+  .mobile-landing-ornaments[data-variant='threads'] > .mobile-ornament-threads,
+  .mobile-landing-ornaments[data-variant='lanterns'] > .mobile-ornament-lanterns,
+  .mobile-landing-ornaments[data-variant='feathers'] > .mobile-ornament-feathers { display: block; }
+  .mobile-silver-strands { stroke: #d1dce2; stroke-width: .8; opacity: .3; }
+  .mobile-strand-pendant { animation: mobile-ornament-breathe 7s ease-in-out infinite; }
+  .mobile-kitsune-roof { stroke: #ad8870; stroke-width: .8; opacity: .2; }
+  .mobile-lanterns { stroke: #c9aa7c; stroke-width: .8; opacity: .65; }
+  .mobile-lantern-light { fill: #d7a55812; }
+  .mobile-lantern-sway { transform-box: fill-box; transform-origin: top center; animation: mobile-lantern-wind 8s ease-in-out infinite alternate; }
+  .mobile-lanterns > g:last-child .mobile-lantern-sway { animation-delay: -4s; }
+  .mobile-lantern-glow { animation: mobile-ornament-breathe 7s ease-in-out infinite; filter: drop-shadow(0 0 2px #d7a55888); }
+  .mobile-nordic-gate { stroke: #bdccd6; stroke-width: .8; opacity: .2; }
+  .mobile-nordic-gold { stroke: #b5a078; }
+  .mobile-plumes { display: none; position: absolute; inset: 0; }
+  .mobile-landing-ornaments[data-variant='feathers'] .mobile-plumes { display: block; }
+  .mobile-plume { position: absolute; top: -65px; width: 22px; animation: mobile-plume-fall 17s linear infinite; }
+  .mobile-plume svg { display: block; width: 100%; height: auto; }
+  .mobile-plume-left { left: 28px; --plume-drift: 8px; --plume-angle: -18deg; animation-delay: -7s; }
+  .mobile-plume-right { right: 30px; --plume-drift: -8px; --plume-angle: 20deg; animation-duration: 21s; animation-delay: -13s; }
+
+  /* Only the home greeting card gets this composition; hubs keep their artwork. */
+  .home-mobile-hero::before { display: none; }
+  .home-mobile-hero > .mobile-landing-ornaments { inset: 0 0 0 auto; width: 135px; height: 100%; transform: none; mask-image: linear-gradient(90deg, transparent, #000 45%); opacity: .7; }
+  .home-mobile-hero .mobile-ornament-art { width: 360px; max-width: none; left: auto; right: -1px; height: 200px; }
+  .home-mobile-hero .mobile-plume-left { display: none; }
+  .home-mobile-hero .mobile-plume-right { right: 28px; }
+  [data-theme='preview-wine'] .home-mobile-hero .mobile-ornament-threads,
+  [data-theme='preview-kitsune'] .home-mobile-hero .mobile-ornament-lanterns,
+  [data-theme='preview-valquiria'] .home-mobile-hero .mobile-ornament-feathers { display: block; }
+  [data-theme='preview-valquiria'] .home-mobile-hero .mobile-plumes { display: block; }
+}
+
+@keyframes mobile-plume-fall {
+  0% { opacity: 0; transform: translateY(0) rotate(var(--plume-angle)); }
+  22%, 52% { opacity: .4; }
+  90%, 100% { opacity: 0; transform: translate(var(--plume-drift), 275px) rotate(calc(var(--plume-angle) + 14deg)); }
+}
+@keyframes mobile-lantern-wind { from { rotate: -2deg; } to { rotate: 2deg; } }
+@keyframes mobile-ornament-breathe { 0%, 100% { opacity: .45; } 50% { opacity: .9; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-plume { animation: none; top: 48px; opacity: .25; transform: rotate(var(--plume-angle)); }
+  .mobile-lantern-sway, .mobile-lantern-glow, .mobile-strand-pendant { animation: none; }
+}

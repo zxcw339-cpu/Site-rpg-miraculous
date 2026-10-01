@@ -355,8 +355,8 @@ export default function App() {
 
   const accountGameError = persisted && protectedScreen && gameError
 
-  return <div className="app auth-app" style={{ ...theme.colors, '--auth-scale': scale } as CSSProperties}>
-    <Atmosphere variant={theme.atmosphere} />
+  return <div className="app auth-app" data-decoration-layout={isHome ? 'home' : isWorkspace ? 'workspace' : 'entry'} style={{ ...theme.colors, '--auth-scale': scale } as CSSProperties}>
+    <Atmosphere variant={theme.atmosphere} landing={!isWorkspace} />
     <a className="skip-link" href={isWorkspace ? '#home-title' : isWelcome ? '#boas-vindas' : isRegistration ? '#cadastro' : '#login'} onClick={event => {
       event.preventDefault()
       document.getElementById(isWorkspace ? 'home-title' : isWelcome ? 'welcome-title' : isRegistration ? 'register-name' : isRecovery ? 'recovery-title' : 'login-name')?.focus()
@@ -492,7 +492,7 @@ export default function App() {
         /> : <HomeScreen name={activeProfile?.name || 'Visitante'} titleRef={titleRef} />}
       </WorkspaceShell> : <div ref={compositionRef} className={isRegistration ? 'auth-composition auth-composition-registration' : 'auth-composition'}>
         <div className="brand">
-          <div className="brand-symbol" aria-hidden="true"><span /><GemIcon /><span /></div>
+          <div className="brand-symbol" aria-hidden="true"><span />{theme.symbol === 'wings' ? <SymbolIcon symbol="wings" /> : <GemIcon />}<span /></div>
           <h1>MIRACULOUS</h1>
           <p>PAINEL DE CAMPANHAS</p>
         </div>

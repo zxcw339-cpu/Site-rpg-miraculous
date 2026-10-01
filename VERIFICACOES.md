@@ -1,5 +1,21 @@
 # Verificações do protótipo
 
+## Decorações das telas iniciais no celular — 01/10/2026
+
+- Login, cadastro, boas-vindas e início usam uma composição própria de ornamentos no celular, sem comprimir os portões do desktop. Valquíria tem penas pequenas inteiras com queda e desaparecimento; Kitsune tem lanternas proporcionais; Aranha tem fios e dois pingentes discretos.
+- No início os motivos ficam no lado direito do cartão de boas-vindas, com uma máscara suave para preservar a leitura. As novas regras são limitadas às telas iniciais; o hub de fichas mantém a atmosfera anterior e não contém os novos ornamentos.
+- Conferidos os três temas no início em 320/390 px, cadastro em 320 px e login/boas-vindas em 390 px, sem transbordamento horizontal. Em 1280 × 720, login mantém o fundo do desktop e oculta a composição mobile. Animações têm alternativa estática para movimento reduzido.
+- Compilação TypeScript/Vite e `git diff --check` aprovados. Verificação com dados fictícios locais, sem publicar ou alterar o Supabase.
+
+## Tema Valquíria — 01/10/2026
+
+- Adicionado ao seletor de Aparência o estudo Valquíria, com prata, branco de plumas e pequenos detalhes em ouro envelhecido. Ornamentos vetoriais próprios: penas de filamentos curvos e haste fina, portão angular de inspiração nórdica e símbolo de asas. As penas caem, oscilam e desaparecem gradualmente; a animação respeita a preferência por movimento reduzido.
+- Paleta aplicada também aos cartões de fichas/campanhas, ações principais e início mobile. Conferido texto escuro sobre o botão prata; os cartões usam superfície e bordas frias, sem herdar o vinho da Aranha.
+- Conferência visual no navegador em 1920 × 1080 e 390 × 844. Início mobile sem transbordamento horizontal. Troca entre as três aparências conferida; cada escolha exibe somente sua atmosfera. Valquíria permaneceu selecionada após recarregar.
+- Console sem avisos/erros. Os 33 testes existentes e a compilação TypeScript/Vite passaram. Permanece o aviso já existente de JavaScript acima de 500 kB.
+- Verificação em demonstração local, sem alterar dados do Supabase. O estudo está disponível na prévia local; não foi publicado nesta etapa.
+- Refinamento conferido em 1920 × 1080 e 390 × 844: dez penas no desktop e quatro no celular, com movimento e opacidades diferentes. Documento mobile sem transbordamento horizontal, ornamentos sem interceptar cliques e console sem erros/avisos. Compilação aprovada após a alteração de SVG/CSS.
+
 ## Porte para celular — 01/10/2026
 
 - Interface própria até 900 px: início com atalhos, navegação inferior, hubs em uma coluna, cabeçalho compacto da campanha e acesso ao perfil em painel. O desktop mantém a composição central e o menu lateral.

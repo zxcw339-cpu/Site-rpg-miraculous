@@ -1,6 +1,6 @@
 # Miraculous · Painel de campanhas
 
-Site de RPG para PC feito com React, TypeScript e Vite. O desenho para celular será uma interface própria; a direção inicial está em [MOBILE.md](MOBILE.md). As aparências Aranha e Kitsune continuam provisórias e a preferência visual fica no navegador.
+Site de RPG para PC e celular feito com React, TypeScript e Vite. A direção da interface mobile está em [MOBILE.md](MOBILE.md). As aparências Aranha, Kitsune e Valquíria continuam provisórias e a preferência visual fica no navegador.
 
 ## O que funciona
 

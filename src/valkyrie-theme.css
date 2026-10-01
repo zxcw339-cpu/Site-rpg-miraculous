@@ -1,0 +1,67 @@
+.valkyrie-atmosphere { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; user-select: none; color: #d3dce3; }
+.valkyrie-atmosphere svg { position: absolute; display: block; }
+.valkyrie-architecture { inset: 0; width: 100%; height: 100%; }
+.valkyrie-gate { stroke: #b8c7d4; stroke-width: 1; opacity: .16; fill: #c2d2df02; stroke-linejoin: round; }
+.valkyrie-roof { stroke: #b6a176; stroke-width: 1.2; }
+.valkyrie-carving { stroke: #b6a176; stroke-width: .9; }
+.valkyrie-floor { stroke: #b9aa89; stroke-width: .7; opacity: .13; }
+.valkyrie-edge-line { stroke: #b5a078; stroke-width: .8; opacity: .38; }
+.valkyrie-plume-soft { fill: #eaf1f50a; stroke: none; }
+.valkyrie-quill { stroke: #f3f4ef; stroke-width: .95; stroke-linecap: round; }
+.valkyrie-barbs { stroke: #e3eaf0; stroke-width: .8; stroke-linecap: round; opacity: .76; }
+.valkyrie-down { stroke: #cfdce6; stroke-width: .7; stroke-linecap: round; opacity: .55; }
+.valkyrie-gold { stroke: #b5a078; stroke-width: .9; fill: none; }
+.valkyrie-feather-field { position: absolute; inset: 0; overflow: hidden; }
+.valkyrie-falling-feather { position: absolute; top: -200px; width: var(--feather-size); opacity: 0; animation: valkyrie-feather-fall var(--fall-duration) linear infinite; animation-delay: var(--fall-delay); }
+.valkyrie-feather-turn { transform-origin: center 60%; animation: valkyrie-feather-turn 8s ease-in-out infinite alternate; animation-delay: var(--fall-delay); }
+.valkyrie-feather-turn > svg { position: static; width: 100%; height: auto; overflow: visible; }
+.valkyrie-stars { opacity: .45; animation: valkyrie-glimmer 9s ease-in-out infinite; }
+
+[data-theme='preview-valquiria'] .login-button { background: linear-gradient(115deg, #edf0f1, #bdc6ce 65%, #dce2e5); border-color: #c6b38866; }
+[data-theme='preview-valquiria'] .login-button:not(:disabled):hover { background: linear-gradient(115deg, #fff, #d8dfe4); }
+[data-theme='preview-valquiria'] .login-card { border-color: #aab9c45c; }
+[data-theme='preview-valquiria'] .login-card::before,
+[data-theme='preview-valquiria'] .login-card::after { background: linear-gradient(90deg, transparent, #ad9460); }
+[data-theme='preview-valquiria'] .card-diamond { border-color: #b5a078; }
+[data-theme='preview-valquiria'] .brand h1,
+[data-theme='preview-valquiria'] .login-card h2 { color: #eef0ee; }
+[data-theme='preview-valquiria'] .brand-symbol > svg { width: 44px; color: #d6dfe5; }
+[data-theme='preview-valquiria'] .account-emblem { color: #ced7dd; }
+[data-theme='preview-valquiria'] .below-card,
+[data-theme='preview-valquiria'] .appearance-trigger svg { color: #b5a078; }
+[data-theme='preview-valquiria'] .home-seal { color: #d4dce1; border-color: #b5a07860; }
+[data-theme='preview-valquiria'] .home-mobile-hero { background: radial-gradient(ellipse at 95% 0, #d5e1eb13, transparent 68%), linear-gradient(125deg, #232830, #1b1e24 70%); border-color: #b5a07860; }
+[data-theme='preview-valquiria'] .home-mobile-hero::after { border-color: #c1ced92b; box-shadow: 0 0 0 23px #c1ced908, 0 0 0 47px #c1ced907; }
+[data-theme='preview-valquiria'] .home-mobile-hero h2,
+[data-theme='preview-valquiria'] .home-mobile-card strong { color: #eef0ee; }
+[data-theme='preview-valquiria'] .home-mobile-hero-icon,
+[data-theme='preview-valquiria'] .home-mobile-card-icon { color: #d3dde4; border-color: #b5a07860; }
+[data-theme='preview-valquiria'] .home-mobile-section-heading,
+[data-theme='preview-valquiria'] .home-mobile-card small,
+[data-theme='preview-valquiria'] .home-mobile-card b { color: #b5a078; }
+[data-theme='preview-valquiria'] .home-mobile-card { border-color: #aebac33b; }
+
+@keyframes valkyrie-feather-fall {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  12% { opacity: .46; }
+  48% { opacity: .54; }
+  70% { opacity: .42; }
+  91%, 100% { transform: translate3d(var(--feather-drift), calc(100vh + 380px), 0); opacity: 0; }
+}
+@keyframes valkyrie-feather-turn {
+  from { transform: translateX(-12px) rotate(calc(var(--feather-tilt) - 12deg)); }
+  to { transform: translateX(12px) rotate(calc(var(--feather-tilt) + 12deg)); }
+}
+@keyframes valkyrie-glimmer { 0%, 100% { opacity: .22; } 50% { opacity: .55; } }
+@media (max-width: 900px) {
+  .valkyrie-architecture { display: none; }
+  .valkyrie-falling-feather { width: 42px; }
+  .valkyrie-falling-feather:nth-child(n + 5) { display: none; }
+  .valkyrie-falling-feather[data-side='left'] { left: -9px !important; }
+  .valkyrie-falling-feather[data-side='right'] { left: auto !important; right: -9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .valkyrie-falling-feather { animation: none; top: var(--feather-rest-y); opacity: .26; }
+  .valkyrie-feather-turn { animation: none; transform: rotate(var(--feather-tilt)); }
+  .valkyrie-stars { animation: none; }
+}

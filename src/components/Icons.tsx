@@ -48,6 +48,7 @@ export function SymbolIcon({ symbol, ...props }: IconProps & { symbol: ThemeSymb
     {symbol === 'diamond' && <g stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"><path d="M20 4 32 18 20 36 8 18Z M20 4 16 18 20 36 24 18Z M8 18h24" /></g>}
     {symbol === 'star' && <g stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round"><path d="m20 3 4.5 12.5L37 20l-12.5 4.5L20 37l-4.5-12.5L3 20l12.5-4.5Z" /><path d="m11 11 18 18m0-18L11 29" opacity=".5" /><circle cx="20" cy="20" r="4" /></g>}
     {symbol === 'bloom' && <g stroke="currentColor" strokeWidth="1.25"><path d="M20 34C1 28 8 12 20 20 8 8 24 1 20 20 28 1 40 17 20 20 40 20 33 37 20 20Z" strokeLinejoin="round" /><circle cx="20" cy="20" r="3" /></g>}
+    {symbol === 'wings' && <g stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"><path d="M18 28C6 27 4 18 3 8c5 7 9 7 12 10l3 10ZM22 28c12-1 14-10 15-20-5 7-9 7-12 10l-3 10ZM5 15l9 6m-6 0 7 3m20-9-9 6m6 0-7 3M20 15l3 5-3 12-3-12Z" /></g>}
   </svg>
 }
 

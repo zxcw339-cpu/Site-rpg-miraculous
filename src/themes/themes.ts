@@ -1,11 +1,11 @@
-export type ThemeSymbol = 'diamond' | 'star' | 'bloom' | 'spider'
+export type ThemeSymbol = 'diamond' | 'star' | 'bloom' | 'spider' | 'wings'
 
 export interface ThemeDefinition {
   id: string
   name: string
   description: string
   symbol: ThemeSymbol
-  atmosphere: 'threads' | 'lanterns'
+  atmosphere: 'threads' | 'lanterns' | 'feathers'
   colors: Record<`--${string}`, string>
 }
 
@@ -58,6 +58,30 @@ export const previewThemes: readonly ThemeDefinition[] = [
       '--hub-border-hover': '#cfab74',
       '--hub-ink': '#d0b28a',
       '--hub-ink-muted': '#b49b78',
+    },
+  },
+  {
+    id: 'preview-valquiria',
+    name: 'Valquíria',
+    description: 'Prata, branco de plumas e detalhes em ouro envelhecido.',
+    symbol: 'wings',
+    atmosphere: 'feathers',
+    colors: {
+      '--accent': '#c4cbd0',
+      '--accent-hover': '#e3e7e9',
+      '--accent-bright': '#e0e5e8',
+      '--accent-soft': 'rgba(193, 203, 212, 0.11)',
+      '--ambient': 'rgba(140, 160, 179, 0.10)',
+      '--ornament': '#b09a6b',
+      '--button-text': '#171a1f',
+      '--panel-glow': 'rgba(188, 203, 218, 0.06)',
+      '--hub-surface': '#aab9c514',
+      '--hub-surface-hover': '#c3ccd41a',
+      '--hub-art-glow': '#c0d1de20',
+      '--hub-border': '#aebac34a',
+      '--hub-border-hover': '#b5a078',
+      '--hub-ink': '#d2dae0',
+      '--hub-ink-muted': '#a8b2bc',
     },
   },
 ]

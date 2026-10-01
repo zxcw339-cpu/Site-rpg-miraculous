@@ -4,6 +4,7 @@ import { GemIcon } from './Icons'
 import { HomeProfile } from './HomeProfile'
 import type { HomeProfileChanges, HomeProfileData } from './HomeProfile'
 import '../home.css'
+import { MobileLandingOrnaments } from './MobileLandingOrnaments'
 
 interface WorkspaceShellProps {
   page: 'home' | 'sheets' | 'campaigns'
@@ -59,6 +60,7 @@ export function HomeScreen({ name, titleRef }: { name: string; titleRef: RefObje
         </header>
         <section className="home-mobile-landing" aria-label="Seu espaço Miraculous">
           <div className="home-mobile-hero">
+            <MobileLandingOrnaments />
             <span className="home-mobile-hero-icon" aria-hidden="true"><GemIcon /></span>
             <p className="home-overline">SEU UNIVERSO</p>
             <h2>Onde a próxima história começa.</h2>
