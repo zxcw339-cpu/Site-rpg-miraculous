@@ -12,3 +12,13 @@
 .welcome-feedback:empty { display: none; }
 .welcome-feedback.is-visible { margin-top: 24px; padding: 13px 15px; border-left: 2px solid var(--accent-bright); border-radius: 0 4px 4px 0; background: var(--accent-soft); color: #d0c9bc; font-size: 13px; line-height: 1.75; text-align: left; }
 .welcome-note { max-width: 290px; margin: 25px auto 0; color: #a9a398; font-size: 11px; line-height: 1.8; }
+
+@media (max-width: 900px) {
+  .auth-composition .login-card.welcome-card { padding: 32px 22px 26px; }
+  .auth-composition .welcome-card .welcome-title { margin-bottom: 24px; font-size: 26px; }
+  .welcome-name { font-size: clamp(31px, 9vw, 38px); }
+  .welcome-avatar { width: 108px; height: 108px; }
+  .welcome-avatar > svg { width: 75px; height: 75px; }
+  .welcome-actions { max-width: none; margin-top: 28px; }
+  .welcome-card .welcome-exit { min-height: 48px; }
+}

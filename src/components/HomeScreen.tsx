@@ -44,9 +44,9 @@ export function WorkspaceShell({ page, children, profile, titleRef, onProfileCha
           <NavigationIcon kind={link.page} /><span className="home-nav-label" aria-hidden="true">{link.label}</span>
         </a>)}
       </nav>
-      <div className="home-sidebar-profile"><HomeProfile profile={profile} onUpdate={onProfileChange} onPasswordUpdate={onPasswordUpdate} onExit={onExit} authenticated={authenticated} /></div>
+      <div className="home-sidebar-profile"><HomeProfile profile={profile} onUpdate={onProfileChange} onPasswordUpdate={onPasswordUpdate} onExit={onExit} authenticated={authenticated} /><span className="home-mobile-profile-label" aria-hidden="true">Perfil</span></div>
     </aside>
-    <div className="home-canvas">{children}</div>
+    <div className={`home-canvas${page === 'home' ? ' home-canvas-home' : ''}`}>{children}</div>
   </section>
 }
 
@@ -57,6 +57,19 @@ export function HomeScreen({ name, titleRef }: { name: string; titleRef: RefObje
           <h1 ref={titleRef} id="home-title" tabIndex={-1}>Olá, <span>{name}.</span></h1>
           <span className="home-heading-rule" aria-hidden="true" />
         </header>
+        <section className="home-mobile-landing" aria-label="Seu espaço Miraculous">
+          <div className="home-mobile-hero">
+            <span className="home-mobile-hero-icon" aria-hidden="true"><GemIcon /></span>
+            <p className="home-overline">SEU UNIVERSO</p>
+            <h2>Onde a próxima história começa.</h2>
+            <p>Suas personagens, mesas e aventuras em um só lugar.</p>
+          </div>
+          <div className="home-mobile-section-heading"><span>ACESSO RÁPIDO</span><span aria-hidden="true">✦</span></div>
+          <div className="home-mobile-actions">
+            <a className="home-mobile-card" href="#fichas"><span className="home-mobile-card-icon"><NavigationIcon kind="sheets" /></span><span><small>PERSONAGENS</small><strong>Minhas fichas</strong><em>Criar ou continuar uma ficha</em></span><b aria-hidden="true">↗</b></a>
+            <a className="home-mobile-card" href="#campanhas"><span className="home-mobile-card-icon"><NavigationIcon kind="campaigns" /></span><span><small>AVENTURAS</small><strong>Minhas mesas</strong><em>Jogar, mestrar ou entrar por convite</em></span><b aria-hidden="true">↗</b></a>
+          </div>
+        </section>
         <div className="home-center">
           <div className="home-brand" role="img" aria-label="Miraculous — símbolo provisório do RPG">
             <div className="home-seal"><span className="home-seal-mark home-seal-mark-top" /><GemIcon /><span className="home-seal-mark home-seal-mark-bottom" /></div>

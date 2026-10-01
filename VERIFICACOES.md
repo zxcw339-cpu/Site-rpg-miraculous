@@ -1,5 +1,18 @@
 # Verificações do protótipo
 
+## Porte para celular — 01/10/2026
+
+- Interface própria até 900 px: início com atalhos, navegação inferior, hubs em uma coluna, cabeçalho compacto da campanha e acesso ao perfil em painel. O desktop mantém a composição central e o menu lateral.
+- Login, cadastro e boas-vindas usam rolagem natural e campos legíveis, sem reduzir a tela de computador. Cadastro conferido em 320 × 568, sem transbordamento horizontal depois de remover a largura mínima fixa do documento no celular.
+- Ficha conferida em 390 × 844: criação na demonstração, edição de identidade e atributo, salvamento temporário, navegação entre seções e rolagem de três d20 com resultado direto. Os controles de salvar e rolar continuam no cabeçalho; o menu Miraculous tem botão explícito para uso por toque.
+- Campanhas e comunidade conferidas em 360 × 780 e 390 × 844: mural e chat em abas separadas, envio de mensagem e edição do texto na demonstração. Em 844 × 390, o hub usa busca e ações na mesma linha para preservar espaço para as campanhas.
+- Perfil conferido em 430 × 932 e 390 × 430. A redução de altura simula o espaço ocupado pelo teclado. Foi corrigido um conflito em que ocultar o menu inferior escondia também o diálogo de perfil. Após a correção, o campo manteve foco, recebeu o novo nome e o perfil foi salvo na demonstração.
+- Ajustado o tamanho disponível com VisualViewport, espaço das áreas seguras do aparelho, formulários com fonte de 16 px e controles principais com área de toque de pelo menos 44 px. Notificações de perfil e conta ficam acima da navegação inferior.
+- Tema Kitsune selecionado e início mobile conferido visualmente. Login desktop em 1280 × 720: cartão centralizado em (640, 360), documento sem rolagem horizontal ou vertical.
+- `npm.cmd test`: 33 testes aprovados. Compilação TypeScript e build de produção aprovados. Permanece o aviso já existente de pacote JavaScript acima de 500 kB.
+
+Verificação feita no navegador integrado, com dados fictícios locais. Não foram testados aparelhos físicos nem chamadas autenticadas ao Supabase nesta etapa. Estes resultados descrevem os testes locais anteriores à publicação.
+
 ## Correção após o teste público — 25/09/2026
 
 - O banco hospedado já autorizava mestre e jogador por UUID de `auth.users`. Três mesas pertenciam ao mesmo UUID de uma conta Discord, enquanto uma conta de e-mail distinta tinha outro UUID e nenhuma mesa. A correção preserva essa separação; não une perfis pelo nome, evitando transferir acesso à pessoa errada.

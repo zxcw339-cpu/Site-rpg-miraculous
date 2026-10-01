@@ -58,3 +58,47 @@
 .home-profile-apply { flex: 1; border: 1px solid #ffffff0b; background: var(--accent); color: var(--button-text); }
 .home-profile-apply:hover { background: var(--accent-hover); box-shadow: 0 5px 24px var(--accent-soft); }
 .home-profile-apply:disabled { cursor: wait; opacity: .55; }
+
+@media (max-width: 900px) {
+  .home-profile-trigger { width: 48px; height: 48px; }
+  .home-profile-popover {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    top: auto !important;
+    width: auto;
+    max-width: none;
+    max-height: min(75dvh, 540px) !important;
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 18px;
+    box-shadow: 0 18px 80px #000b;
+  }
+  .home-profile-popover::backdrop { background: #08090b9c; }
+  .home-profile-avatar { flex-basis: 58px; height: 58px; }
+  .home-profile-identity h2 { font-size: 29px; }
+  .home-profile-bio { font-size: 13px; }
+  .home-profile-actions button { min-height: 48px; font-size: 13px; }
+  .home-profile-password { min-height: 48px; font-size: 12px; }
+
+  .modal.home-profile-modal {
+    position: fixed;
+    inset: auto 0 0 !important;
+    width: 100vw;
+    max-width: none;
+    max-height: calc(100dvh - 12px);
+    margin: 0;
+    padding: 30px 20px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 18px 18px 0 0;
+    border-bottom: 0;
+    overscroll-behavior: contain;
+  }
+  .home-profile-modal h2 { font-size: 31px; padding-right: 30px; }
+  .home-profile-note { margin-bottom: 20px; }
+  .home-profile-photo-row { gap: 15px; margin-bottom: 20px; padding-bottom: 18px; }
+  .home-profile-photo-control { flex-basis: 94px; }
+  .home-profile-photo-info > p:first-child { font-size: 12px; line-height: 1.5; }
+  .home-profile-field { margin-bottom: 17px; }
+  .home-profile-field input, .home-profile-field textarea { font-size: 16px; }
+  .home-profile-form-actions { position: sticky; bottom: -1px; z-index: 1; margin-top: 18px; padding: 12px 0 0; background: linear-gradient(180deg, transparent, #1a1b1e 20%); }
+  .home-profile-form-actions button { min-height: 48px; padding-inline: 14px; font-size: 13px; }
+}

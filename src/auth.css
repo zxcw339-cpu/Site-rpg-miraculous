@@ -104,3 +104,63 @@
 .registration-result-actions .secondary-button { min-height: 46px; }
 .password-recovery-result .register-link { gap: 10px; }
 .password-recovery-result .register-link svg { width: 20px; height: 20px; }
+
+/* Mobile auth uses a scrollable page instead of scaling the 1920 × 1080 composition. */
+@media (max-width: 900px) {
+  .auth-app:has(.auth-composition) { height: auto; min-height: 100svh; }
+  .auth-app:has(.auth-composition) .page-header { height:calc(58px + env(safe-area-inset-top)); flex:0 0 calc(58px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); }
+  .auth-app:has(.auth-composition) .page-footer { height: auto; flex: none; min-height: 60px; margin-inline: 18px; padding: 13px 0 calc(13px + env(safe-area-inset-bottom)); }
+  .auth-main:has(> .auth-composition) { display: block; flex: 1 0 auto; min-height: auto; width: 100%; padding: 23px 16px 42px; }
+  .auth-composition, .auth-composition-registration { width: min(100%, 430px); margin-inline: auto; transform: none; }
+  .auth-composition .brand, .auth-composition-registration .brand { position: static; width: 100%; margin: 0 0 22px; }
+  .auth-composition .brand-symbol { gap: 13px; margin-bottom: 7px; }
+  .auth-composition .brand-symbol > span { width: 31px; }
+  .auth-composition .brand-symbol > svg, .auth-composition-registration .brand-symbol > svg { width: 22px; height: 32px; }
+  .auth-composition .brand h1, .auth-composition-registration .brand h1 { margin: 0 0 4px 7px; font-size: clamp(28px, 8.5vw, 36px); letter-spacing: 7px; }
+  .auth-composition .brand > p, .auth-composition-registration .brand > p { margin: 0 0 0 3px; font-size: 8px; letter-spacing: 3px; }
+  .auth-composition .login-card { width: 100%; padding: 25px 22px 24px; border-radius: 14px; }
+  .auth-composition .account-emblem { width: 54px; height: 54px; margin-bottom: 16px; }
+  .auth-composition .login-card h2 { font-size: clamp(27px, 7.4vw, 32px); }
+  .auth-composition .login-subtitle { margin-bottom: 24px; font-size: 13px; }
+  .auth-composition .field-group, .auth-composition .registration-fields .field-group { margin-bottom: 17px; }
+  .auth-composition .field-group label { margin-bottom: 8px; font-size: 13px; }
+  .auth-composition .field-group input, .auth-composition .registration-fields input { height: 50px; padding-inline: 14px; font-size: 16px; }
+  .auth-composition .password-field input { padding-right: 52px; }
+  .auth-composition .password-toggle, .auth-composition .registration-fields .password-toggle { top: 2px; right: 2px; width: 46px; height: 46px; }
+  .auth-composition .login-button { min-height: 52px; margin-top: 20px; font-size: 15px; }
+  .auth-composition .discord-button { min-height: 50px; font-size: 14px; }
+  .auth-composition .register-divider { margin-top: 24px; white-space: normal; text-align: center; font-size: 11px; }
+  .auth-composition .register-link { min-height: 44px; font-size: 14px; }
+  .auth-composition .auth-demo-button { min-height:44px; }
+  .auth-composition .auth-forgot-link { min-height: 38px; display: flex; align-items: center; margin-top: -8px; }
+  .auth-tail { position: static; padding-top: 15px; }
+  .auth-composition .below-card { margin: 0 0 7px; }
+  .auth-composition .tagline { font-size: 16px; line-height: 1.35; }
+
+  .auth-composition .registration-card { padding: 25px 20px 22px; }
+  .registration-heading { margin-bottom: 20px; }
+  .auth-composition .registration-heading h2 { font-size: 32px; }
+  .auth-composition .registration-heading .login-subtitle { margin: 0; }
+  .registration-form { display: flex; flex-direction: column; gap: 17px; }
+  .registration-profile { display: grid; grid-template-columns: 48px minmax(0, 1fr); column-gap: 14px; align-items: center; padding: 12px; border: 1px solid #a49b8929; border-radius: 9px; background: #ffffff04; text-align: left; }
+  .registration-profile h3 { grid-column: 2; grid-row: 1; margin: 0 0 2px; font-size: 13px; }
+  .registration-profile .registration-avatar-placeholder { grid-column: 1; grid-row: 1 / 3; width: 48px; height: 48px; margin: 0; }
+  .registration-profile .registration-avatar-placeholder svg { width: 34px; height: 34px; }
+  .registration-profile .profile-hint { grid-column: 2; grid-row: 2; margin: 0; font-size: 11px; line-height: 1.45; }
+  .registration-profile .profile-hint:last-child { display: none; }
+  .registration-passwords { display: block; }
+  .auth-composition .registration-fields textarea { min-height: 88px; font-size: 16px; }
+  .auth-composition .registration-submit { margin-top: 6px; }
+  .registration-demo-note { line-height: 1.5; }
+  .registration-return { flex-wrap: wrap; margin-top: 20px; padding-top: 16px; line-height: 1.5; }
+  .registration-result { padding: 8px 0 15px; }
+  .registration-result h3 { font-size: 29px; }
+  .registration-result-actions { display: grid; gap: 10px; }
+  .registration-result-actions .login-button { width: 100%; }
+}
+
+@media (max-width: 360px) {
+  .auth-main:has(> .auth-composition) { padding-inline: 12px; }
+  .auth-composition .login-card, .auth-composition .registration-card { padding-inline: 17px; }
+  .auth-composition .brand h1, .auth-composition-registration .brand h1 { font-size: 27px; letter-spacing: 6px; }
+}

@@ -269,3 +269,11 @@ button svg { flex-shrink: 0; }
   .below-card, .tagline { display: none; }
   .login-main { padding-bottom: 22px; }
 }
+
+@media (max-width: 900px) {
+  body { min-width:0; }
+  .modal { max-height:calc(var(--mobile-viewport-height, 100dvh) - 24px); }
+  .modal-close { min-width:44px; min-height:44px; }
+  .mobile-keyboard-open .modal { top:12px; bottom:auto; margin-top:0; }
+  .mobile-keyboard-open .home-profile-modal { inset:12px 0 auto !important; max-height:calc(var(--mobile-viewport-height, 100dvh) - 24px); }
+}

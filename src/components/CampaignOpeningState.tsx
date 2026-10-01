@@ -27,7 +27,7 @@ export function CampaignOpeningState({ name, isMaster, titleRef, error, onRetry 
         <h1 id="home-title" ref={titleRef} tabIndex={-1}>{name || 'Sua campanha'}</h1>
         <p>{error ? 'Não foi possível abrir esta mesa.' : 'Preparando o espaço da sua campanha.'}</p>
       </div>
-      <a className="hub-button" href="#campanhas">← Todas as campanhas</a>
+      <a className="hub-button campaign-page-back" href="#campanhas" aria-label="Todas as campanhas"><span aria-hidden="true">←</span><span className="campaign-page-back-label">Todas as campanhas</span></a>
     </header>
 
     <div className="campaign-page-layout">

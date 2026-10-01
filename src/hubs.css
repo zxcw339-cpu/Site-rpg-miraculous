@@ -77,3 +77,50 @@
 .hub-page > .hub-status { margin-bottom: 14px; }
 @media (max-height: 850px) { .hub-header { padding-top: 20px; padding-bottom: 15px; } .hub-header h1 { font-size: 33px; } .hub-toolbar { margin-top: 15px; } .hub-group { margin-top: 16px; } }
 @media (prefers-reduced-motion: reduce) { .home-shell { transition: none; } }
+
+@media (max-width: 900px) {
+  .hub-page { min-width:0; }
+  .hub-header { padding:17px 16px 15px; }
+  .hub-title-line { align-items:flex-start; gap:10px; }
+  .hub-header h1 { font-size:clamp(29px,8vw,36px); }
+  .hub-description { margin-top:6px; font-size:11px; }
+  .hub-preview-label { flex:none; padding:5px 6px; font-size:7px; }
+  .hub-toolbar { align-items:stretch; flex-direction:column; gap:10px; margin-top:15px; }
+  .hub-search { flex:none; width:100%; height:44px; }
+  .hub-search input { font-size:16px; }
+  .hub-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(136px,1fr)); gap:8px; }
+  .hub-actions .hub-button { min-width:0; min-height:44px; padding:5px 10px; white-space:normal; line-height:1.2; text-align:center; }
+  .hub-scroll { padding:2px 16px 16px; }
+  .hub-group { margin-top:19px; }
+  .hub-group-heading { height:auto; min-height:24px; }
+  .hub-row-controls { display:none; }
+  .hub-card-row { display:grid; grid-template-columns:1fr; gap:9px; margin:0; padding:0; overflow:visible; }
+  .hub-card { width:100%; min-height:104px; height:auto; flex:none; }
+  .hub-card-art { width:60px; }
+  .hub-card-copy { padding:11px 12px; }
+  .hub-card-name { font-size:21px; }
+  .hub-card-meta { padding-top:9px; }
+  .hub-empty { min-height:96px; }
+  .hub-demo-note { margin-inline:16px; }
+  .hub-status { margin-inline:16px; }
+  .hub-modal { width:min(480px,calc(100vw - 20px)); }
+  .hub-modal .hub-form-actions { display:grid; grid-template-columns:1fr; gap:9px; }
+  .hub-modal .hub-form-actions .hub-button { min-height:44px; white-space:normal; }
+  .hub-form input,.hub-form select,.hub-modal select { font-size:16px; }
+}
+
+@media (max-width: 390px) {
+  .hub-header { padding-inline:13px; }
+  .hub-scroll { padding-inline:13px; }
+  .hub-demo-note,.hub-status { margin-inline:13px; }
+  .hub-title-line { flex-wrap:wrap; }
+}
+
+@media (min-width: 600px) and (max-width: 900px) and (max-height: 520px) {
+  .hub-header { padding:10px 14px; }
+  .hub-header .home-overline,.hub-description { display:none; }
+  .hub-header h1 { font-size:27px; }
+  .hub-toolbar { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; margin-top:10px; }
+  .hub-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .hub-actions > :only-child { grid-column:1 / -1; }
+}

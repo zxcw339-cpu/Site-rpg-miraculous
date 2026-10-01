@@ -31,6 +31,7 @@ interface Props {
 
 export function CampaignCommunity({ workspace, isMaster, viewerId, onManage, onSend, onEditMessage, onRefresh, onCreateCategory, onEditCategory, onDeleteCategory, onCreatePost, onEditPost, onHidePost, persisted = false }: Props) {
   const [view, setView] = useState('all')
+  const [mobilePane, setMobilePane] = useState<'board' | 'chat'>('board')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState('')
@@ -68,7 +69,7 @@ export function CampaignCommunity({ workspace, isMaster, viewerId, onManage, onS
   useEffect(() => {
     const log = logRef.current
     if (log && stickToBottom.current) log.scrollTop = log.scrollHeight
-  }, [lastMessageId])
+  }, [lastMessageId, mobilePane])
 
   useEffect(() => {
     if (view !== 'all' && view !== 'media' && view !== 'notes' && !categories.some(category => category.id === view)) setView('all')
@@ -192,10 +193,14 @@ export function CampaignCommunity({ workspace, isMaster, viewerId, onManage, onS
 
   return <section className="campaign-community" aria-labelledby="community-title">
     <header className="community-heading">
-      <div><p className="home-overline">ESPAÇO DA MESA</p><h2 id="community-title">Comunidade</h2><p>Um mural para tudo que o grupo pode ver, e uma conversa ao lado.</p></div>
+      <div><p className="home-overline">ESPAÇO DA MESA</p><h2 id="community-title">Comunidade</h2><p>Compartilhe histórias, imagens e conversas com o grupo.</p></div>
       <span className="community-preview-badge">{persisted ? 'MESA' : 'PRÉVIA'}</span>
     </header>
-    <div className="community-layout">
+    <div className="community-mobile-switch" role="group" aria-label="Área da comunidade">
+      <button type="button" aria-pressed={mobilePane === 'board'} onClick={() => setMobilePane('board')}><span aria-hidden="true">▧</span>Mural</button>
+      <button type="button" aria-pressed={mobilePane === 'chat'} onClick={() => setMobilePane('chat')}><span aria-hidden="true">◌</span>Chat <small>{messages.length}</small></button>
+    </div>
+    <div className={`community-layout community-mobile-${mobilePane}`}>
       <section className="community-board" aria-label="Mural da campanha">
         <div className="community-board-topline"><div><span className="community-section-number">01 / MURAL</span><h3>Arquivo compartilhado</h3><span className="community-count">{media.length + notes.length} {media.length + notes.length === 1 ? 'publicação' : 'publicações'}</span></div>{onCreatePost && <button type="button" className="community-publish" onClick={() => { setPostError(''); setPostEditor({ mode: 'create', kind: 'note', title: '', body: '', categoryId: null, file: null }) }}>+ Publicar</button>}</div>
         <div className="community-board-header">

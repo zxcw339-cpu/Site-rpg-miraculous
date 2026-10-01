@@ -17,3 +17,14 @@
 .campaign-delete-actions p { color: #f0c7c1; font-size: 12px; line-height: 1.5; }
 .campaign-delete-actions .hub-button + .hub-button { margin-left: 8px; }
 .campaign-copy-status { margin: 10px 0 0; color: var(--accent-bright); font-size: 11px; line-height: 1.6; }
+
+@media (max-width: 900px) {
+  .campaign-overview > div { gap:10px; }
+  .campaign-invite-share { margin:15px 0; padding:13px; }
+  .campaign-invite-copy-row { align-items:stretch; flex-direction:column; }
+  .campaign-invite-copy-row code { font-size:23px; letter-spacing:.16em; }
+  .campaign-invite-copy-row .hub-button { min-height:44px; }
+  .campaign-invite-actions .hub-button { width:100%; min-height:44px; }
+  .campaign-delete-actions .hub-button { width:100%; margin:7px 0 0 !important; min-height:44px; }
+  .field-group .campaign-invite-input { font-size:23px; letter-spacing:.16em; }
+}

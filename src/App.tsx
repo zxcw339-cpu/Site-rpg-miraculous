@@ -88,6 +88,31 @@ export default function App() {
   const waitingForAccount = account.loading || (protectedScreen && !demoMode && !authenticated)
 
   useEffect(() => {
+    const viewport = window.visualViewport
+    const root = document.documentElement
+    function fitMobileViewport() {
+      const mobile = window.innerWidth <= 900
+      const height = viewport?.height ?? window.innerHeight
+      root.style.setProperty('--mobile-viewport-height', `${height}px`)
+      const editing = document.activeElement?.matches('input, textarea, [contenteditable="true"]')
+      root.classList.toggle('mobile-keyboard-open', mobile && Boolean(editing) && (height < window.innerHeight - 100 || height < 520))
+    }
+    viewport?.addEventListener('resize', fitMobileViewport)
+    window.addEventListener('resize', fitMobileViewport)
+    document.addEventListener('focusin', fitMobileViewport)
+    document.addEventListener('focusout', fitMobileViewport)
+    fitMobileViewport()
+    return () => {
+      viewport?.removeEventListener('resize', fitMobileViewport)
+      window.removeEventListener('resize', fitMobileViewport)
+      document.removeEventListener('focusin', fitMobileViewport)
+      document.removeEventListener('focusout', fitMobileViewport)
+      root.style.removeProperty('--mobile-viewport-height')
+      root.classList.remove('mobile-keyboard-open')
+    }
+  }, [])
+
+  useEffect(() => {
     if (account.loading || demoMode) return
     if (!authenticated && protectedScreen) window.location.hash = '#login'
     else if (authenticated && !account.recovery && (screen === 'login' || screen === 'registration')) window.location.hash = '#boas-vindas'
@@ -219,6 +244,7 @@ export default function App() {
     const tail = composition.querySelector<HTMLElement>('.auth-tail')
     function fitComposition() {
       if (!composition) return
+      if (window.innerWidth <= 900) { setScale(1); return }
       const base = desktopScale()
       const halfCard = composition.offsetHeight / 2
       const topExtent = halfCard + (brand?.offsetHeight ?? 0) + 32

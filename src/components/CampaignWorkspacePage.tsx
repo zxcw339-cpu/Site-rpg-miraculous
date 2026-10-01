@@ -41,6 +41,7 @@ interface Props {
 export function CampaignWorkspacePage({ campaign, sheets, titleRef, viewerName, viewerId, onUpdate, onSendMessage, onEditMessage, onCreatePost, onEditPost, onRecordRoll, onRefresh, logs = [], persisted = false }: Props) {
   const [area, setArea] = useState<Area>('overview')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const navRef = useRef<HTMLElement>(null)
   const [notice, setNotice] = useState('')
   const [noticeError, setNoticeError] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -72,6 +73,13 @@ export function CampaignWorkspacePage({ campaign, sheets, titleRef, viewerName, 
   const mediaPreviewIsVideo = Boolean(mediaImage && (mediaImage.startsWith('data:video/') ||
     (editingMediaId && !mediaImage.startsWith('data:') && data.media.find(item => item.id === editingMediaId)?.type === 'video')))
   const ownSheets = sheets.filter(sheet => sheet.campaignId === campaign.id && !isMaster)
+
+  useEffect(() => {
+    if (window.innerWidth > 900) return
+    const nav = navRef.current
+    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]')
+    if (nav && active) nav.scrollTo({ left: active.offsetLeft - nav.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2 })
+  }, [area])
 
   useEffect(() => {
     if (!notice || noticeError || notice === 'Salvando alteração…' || notice === 'Atualizando a Comunidade…') return
@@ -228,12 +236,12 @@ export function CampaignWorkspacePage({ campaign, sheets, titleRef, viewerName, 
   return <div className="campaign-page">
     <header className="campaign-page-header">
       <div><p className="home-overline">CAMPANHAS / {isMaster ? 'MESTRANDO' : 'JOGANDO'}</p><h1 id="home-title" ref={titleRef} tabIndex={-1}>{campaign.name}</h1><p>{isMaster ? 'Seu espaço para conduzir esta mesa.' : 'Sua visão como jogador nesta mesa.'}</p></div>
-      <a className="hub-button" href="#campanhas">← Todas as campanhas</a>
+      <a className="hub-button campaign-page-back" href="#campanhas" aria-label="Todas as campanhas"><span aria-hidden="true">←</span><span className="campaign-page-back-label">Todas as campanhas</span></a>
     </header>
     <div className="campaign-page-layout">
-      <nav className="campaign-page-nav" aria-label="Áreas da campanha">
-        <button type="button" className={area === 'overview' ? 'active' : ''} onClick={() => openArea('overview')}>Visão geral</button>
-        {isMaster ? masterAreas.map(item => <button type="button" key={item.id} className={area === item.id ? 'active' : ''} aria-current={area === item.id ? 'page' : undefined} onClick={() => openArea(item.id)}>{item.title}</button>) : <button type="button" className={area === 'community' ? 'active' : ''} aria-current={area === 'community' ? 'page' : undefined} onClick={() => openArea('community')}>Comunidade</button>}
+      <nav ref={navRef} className="campaign-page-nav" aria-label="Áreas da campanha">
+        <button type="button" className={area === 'overview' ? 'active' : ''} aria-current={area === 'overview' ? 'page' : undefined} onClick={() => openArea('overview')}><span className="campaign-nav-symbol" aria-hidden="true">◇</span>Visão geral</button>
+        {isMaster ? masterAreas.map(item => <button type="button" key={item.id} className={area === item.id ? 'active' : ''} aria-current={area === item.id ? 'page' : undefined} onClick={() => openArea(item.id)}><span className="campaign-nav-symbol" aria-hidden="true">{item.symbol}</span>{item.title}</button>) : <button type="button" className={area === 'community' ? 'active' : ''} aria-current={area === 'community' ? 'page' : undefined} onClick={() => openArea('community')}><span className="campaign-nav-symbol" aria-hidden="true">◌</span>Comunidade</button>}
       </nav>
       <div ref={scrollRef} className={`campaign-page-scroll ${area === 'community' ? 'campaign-community-scroll' : ''}`} aria-busy={saving}>
         {notice && <p className={`campaign-notice ${noticeError ? 'campaign-notice-error' : ''}`} role={noticeError ? 'alert' : 'status'}>{notice}</p>}

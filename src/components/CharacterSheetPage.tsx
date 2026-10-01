@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ChangeEvent, RefObject } from 'react'
+import type { ChangeEvent, RefObject, UIEvent } from 'react'
 import type { CharacterSheet } from '../hub-data'
 import type { CampaignRoll } from '../campaign-model'
 import { attributeNames, availableForms, effectiveValue, formGrant, normalizeSheetDetails, parseAmount, resourceNames, rollDicePool, rollSheetTest, validateSheetDetails } from '../sheet-model'
@@ -24,6 +24,8 @@ interface Props {
 
 type RollResult = SheetRoll & { label: string }
 
+const sheetSections = [['sheet-identity-title', 'Identidade'], ['sheet-status-title', 'Status'], ['sheet-attributes-title', 'Atributos'], ['sheet-skills-title', 'Perícias'], ['sheet-inventory-title', 'Inventário'], ['sheet-abilities-title', 'Habilidades'], ['sheet-lore-title', 'Lore'], ['sheet-appearance-title', 'Aparência']] as const
+
 function NumberField({ label, value, step, onChange, disabled = false }: { label: string; value: number | null; step: number; onChange: (value: number | null) => void; disabled?: boolean }) {
   return <input aria-label={label} type="number" min="0" step={step} inputMode="numeric" value={value ?? ''} placeholder="—" disabled={disabled}
     onChange={event => onChange(parseAmount(event.target.value))} />
@@ -46,6 +48,7 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, back
   const [miraculousOpen, setMiraculousOpen] = useState(false)
   const [grantEditorOpen, setGrantEditorOpen] = useState(false)
   const [rollAttribute, setRollAttribute] = useState<AttributeName>('Força')
+  const [activeSection, setActiveSection] = useState<string>(sheetSections[0][0])
   const [rollResult, setRollResult] = useState<RollResult | null>(null)
   const [rollError, setRollError] = useState('')
   const [message, setMessage] = useState('')
@@ -161,16 +164,27 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, back
     }
   }
 
+  function trackSection(event: UIEvent<HTMLDivElement>) {
+    const guide = event.currentTarget.getBoundingClientRect().top + 90
+    let visibleSection: string = sheetSections[0][0]
+    for (const [id] of sheetSections) {
+      const heading = document.getElementById(id)
+      if (heading && heading.getBoundingClientRect().top <= guide) visibleSection = id
+    }
+    setActiveSection(visibleSection)
+  }
+
   return <div className="sheet-page">
     <header className="sheet-page-header">
       <div><p className="home-overline">{headingContext}</p><h1 id="home-title" ref={titleRef} tabIndex={-1}>{pageTitle}</h1><p>Forma atual: <strong>{formName}</strong></p></div>
-      <div className="sheet-page-actions"><a className="hub-button" href={backHref}>← {backLabel}</a><button className="hub-button" type="button" onClick={rollD20}>⚄ Rolar 1d20</button><button className="hub-button hub-button-primary" type="button" onClick={save} disabled={saving}>{saving ? 'Salvando…' : 'Salvar ficha'}</button></div>
+      <div className="sheet-page-actions"><a className="hub-button sheet-page-back" href={backHref} aria-label={backLabel}><span aria-hidden="true">←</span><span className="sheet-page-back-label">{backLabel}</span></a><button className="hub-button sheet-page-free-roll" type="button" onClick={rollD20}>⚄ Rolar 1d20</button><button className="hub-button hub-button-primary sheet-page-save" type="button" onClick={save} disabled={saving}>{saving ? 'Salvando…' : 'Salvar ficha'}</button></div>
     </header>
     {contextNote && <p className="sheet-page-context-note">{contextNote}</p>}
     {(error || message) && <p className={`sheet-page-feedback ${error ? 'sheet-page-error' : ''}`} role={error ? 'alert' : 'status'}>{error || message}</p>}
-    <div className="sheet-page-scroll">
+    <div className="sheet-page-scroll" onScroll={trackSection}>
       <nav className="sheet-page-index" aria-label="Seções da ficha">
-        {([['sheet-identity-title', 'Identidade'], ['sheet-status-title', 'Status'], ['sheet-attributes-title', 'Atributos'], ['sheet-skills-title', 'Perícias'], ['sheet-inventory-title', 'Inventário'], ['sheet-abilities-title', 'Habilidades'], ['sheet-lore-title', 'Lore'], ['sheet-appearance-title', 'Aparência']] as const).map(([target, label]) => <button key={target} type="button" onClick={() => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{label}</button>)}
+        <span className="sheet-page-index-label" aria-hidden="true">NA FICHA</span>
+        {sheetSections.map(([target, label]) => <button key={target} type="button" aria-current={activeSection === target ? 'location' : undefined} onClick={() => { setActiveSection(target); document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{label}</button>)}
       </nav>
       <div className="sheet-page-grid">
         <div className="sheet-page-column">
