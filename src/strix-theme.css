@@ -1,0 +1,61 @@
+.strix-atmosphere { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; user-select: none; background: radial-gradient(ellipse at 50% 15%, #5264800a, transparent 65%); }
+.strix-background-art { display: block; width: 100%; height: 100%; }
+.strix-mask-outline { stroke: #a0aec4; stroke-width: .55; stroke-linecap: round; stroke-linejoin: round; opacity: .17; }
+.strix-beak { opacity: .5; }
+.strix-eyes { stroke: #ecc17e; stroke-width: .7; filter: drop-shadow(0 0 2px #f4bd7773) drop-shadow(0 0 7px #d9934938); opacity: .8; animation: strix-eyes-breathe 14s ease-in-out infinite; }
+.strix-eye-halo { stroke: none; }
+.strix-eye-rim { opacity: .45; }
+.strix-iris { fill: #e9ad541f; }
+.strix-pupil { fill: #0d131df2; stroke: #d9a660; stroke-width: .4; }
+.strix-eye-glint { fill: #fff1cb; stroke: none; opacity: .95; }
+.strix-eye-blink { transform-box: fill-box; transform-origin: center; animation: strix-eye-blink 23s ease-in-out infinite; }
+.strix-night-lines { stroke: #8898ad; stroke-width: 1; opacity: .17; }
+.strix-moon { position: absolute; right: 8vw; top: 7vh; width: clamp(85px, 7vw, 135px); height: auto; overflow: visible; }
+.strix-moon-art { stroke: #dce7fa; stroke-width: .8; fill: #b7c5dd06; filter: drop-shadow(0 0 4px #c4d9ff88) drop-shadow(0 0 14px #91b5ee40); opacity: .78; animation: strix-moon-breathe 17s ease-in-out infinite; }
+.strix-moon-crescent { fill: #dce7fa24; stroke-width: 1.15; }
+.strix-feather-field { position: absolute; inset: 0; }
+.strix-feather { position: absolute; opacity: .35; transform-origin: center; animation: strix-feather-drift var(--strix-duration, 25s) ease-in-out infinite; animation-delay: var(--strix-delay, 0s); }
+.strix-feather > svg { display: block; width: 100%; height: auto; overflow: visible; }
+.strix-feather .valkyrie-plume-soft { fill: #8797b006; }
+.strix-feather .valkyrie-barbs { stroke: #9aa9c0; opacity: .65; }
+.strix-feather .valkyrie-quill { stroke: #b5c2d5; }
+.strix-feather .valkyrie-down { stroke: #8e9eb7; }
+
+[data-theme='preview-strix'] .login-button { background: linear-gradient(115deg, #586c86, #3e506b); border-color: #b5c2d533; }
+[data-theme='preview-strix'] .login-button:not(:disabled):hover { background: linear-gradient(115deg, #6b809b, #536882); }
+[data-theme='preview-strix'] .login-card { border-color: #97a8c05c; }
+[data-theme='preview-strix'] .login-card::before,
+[data-theme='preview-strix'] .login-card::after { background: linear-gradient(90deg, transparent, #adbacd); }
+[data-theme='preview-strix'] .card-diamond { border-color: #c4ad83; }
+[data-theme='preview-strix'] .brand h1,
+[data-theme='preview-strix'] .login-card h2 { color: #e9edf3; }
+[data-theme='preview-strix'] .brand-symbol,
+[data-theme='preview-strix'] .account-emblem { color: #b9c6d8; }
+[data-theme='preview-strix'] .below-card,
+[data-theme='preview-strix'] .appearance-trigger svg { color: #c4ad83; }
+[data-theme='preview-strix'] .home-seal { color: #bdc9db; border-color: #9cacbf60; }
+[data-theme='preview-strix'] .home-mobile-hero { background: radial-gradient(ellipse at 95% 0, #93aec91a, transparent 65%), linear-gradient(125deg, #222a35, #1a1e27 70%); border-color: #9cacbf60; }
+[data-theme='preview-strix'] .home-mobile-hero::after { display: none; }
+[data-theme='preview-strix'] .home-mobile-hero h2,
+[data-theme='preview-strix'] .home-mobile-card strong { color: #e9edf3; }
+[data-theme='preview-strix'] .home-mobile-hero-icon,
+[data-theme='preview-strix'] .home-mobile-card-icon { color: #bdc9db; border-color: #9cacbf60; }
+[data-theme='preview-strix'] .home-mobile-section-heading,
+[data-theme='preview-strix'] .home-mobile-card small,
+[data-theme='preview-strix'] .home-mobile-card b { color: #b7c7dc; }
+[data-theme='preview-strix'] .home-mobile-card { border-color: #97a8c03b; }
+
+@keyframes strix-eyes-breathe { 0%, 100% { opacity: .62; } 50% { opacity: .95; } }
+@keyframes strix-eye-blink { 0%, 45%, 48%, 100% { transform: scaleY(1); } 46.5% { transform: scaleY(.08); } }
+@keyframes strix-moon-breathe { 0%, 100% { opacity: .6; } 50% { opacity: .9; } }
+@keyframes strix-feather-drift {
+  0%, 100% { opacity: .15; transform: translate(0, 6px) rotate(var(--strix-tilt, 0deg)); }
+  50% { opacity: .4; transform: translate(var(--strix-drift, 10px), -18px) rotate(calc(var(--strix-tilt, 0deg) + 9deg)); }
+}
+@media (max-width: 900px) {
+  .strix-background-art, .strix-feather-field, .strix-moon { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .strix-eyes, .strix-eye-blink, .strix-moon-art, .strix-feather { animation: none; }
+  .strix-feather { transform: rotate(var(--strix-tilt, 0deg)); opacity: .3; }
+}

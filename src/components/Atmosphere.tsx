@@ -1,6 +1,11 @@
 import { WebFrame } from './WebFrame'
 import { LanternAtmosphere } from './LanternAtmosphere'
 import { ValkyrieAtmosphere } from './ValkyrieAtmosphere'
+import { RavenAtmosphere } from './RavenAtmosphere'
+import { CerberusAtmosphere } from './CerberusAtmosphere'
+import { StrixAtmosphere } from './StrixAtmosphere'
+import { KrakenAtmosphere } from './KrakenAtmosphere'
+import { PhoenixAtmosphere } from './PhoenixAtmosphere'
 import type { ThemeDefinition } from '../themes/themes'
 import { MobileLandingOrnaments } from './MobileLandingOrnaments'
 
@@ -15,6 +20,11 @@ export function Atmosphere({ variant = 'threads', landing = false }: { variant?:
 function DesktopAtmosphere({ variant }: { variant: ThemeDefinition['atmosphere'] }) {
   if (variant === 'lanterns') return <LanternAtmosphere />
   if (variant === 'feathers') return <ValkyrieAtmosphere />
+  if (variant === 'runes') return <RavenAtmosphere />
+  if (variant === 'chains') return <CerberusAtmosphere />
+  if (variant === 'night') return <StrixAtmosphere />
+  if (variant === 'abyss') return <KrakenAtmosphere />
+  if (variant === 'embers') return <PhoenixAtmosphere />
   return (
     <div
       className="atmosphere"

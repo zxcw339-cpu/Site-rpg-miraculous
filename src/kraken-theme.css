@@ -1,0 +1,43 @@
+.kraken-atmosphere { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; user-select: none; background: radial-gradient(ellipse at 50% 85%, #24586a12, transparent 67%); }
+.kraken-background-art { display: block; width: 100%; height: 100%; }
+.kraken-deep-water { stroke: #83a4b4; stroke-width: 1; opacity: .13; }
+.kraken-tendril-outline { stroke: #92aeb8; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; opacity: .28; }
+.kraken-suckers { opacity: .6; stroke-width: .85; }
+.kraken-tendril-motion { transform-box: fill-box; transform-origin: center bottom; animation: kraken-water-drift var(--kraken-duration, 25s) ease-in-out infinite; animation-delay: var(--kraken-delay, 0s); }
+.kraken-biolight { stroke: #a2e1e3; stroke-width: 1.1; stroke-linecap: round; filter: drop-shadow(0 0 3px #7bd7de99) drop-shadow(0 0 9px #4099b352); opacity: .7; animation: kraken-light-breathe 11s ease-in-out infinite; animation-delay: var(--kraken-delay, 0s); }
+.kraken-biolight circle { fill: #bfeef0; stroke: none; }
+.kraken-particles { position: absolute; inset: 0; }
+.kraken-particle { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #b4e9e9; box-shadow: 0 0 5px #72c2ce80; opacity: .35; animation: kraken-particle-rise 24s ease-in-out infinite; animation-delay: var(--kraken-delay, 0s); }
+
+[data-theme='preview-kraken'] .login-button { background: linear-gradient(115deg, #356875, #254c5d); border-color: #9bced633; }
+[data-theme='preview-kraken'] .login-button:not(:disabled):hover { background: linear-gradient(115deg, #468391, #356374); }
+[data-theme='preview-kraken'] .login-card { border-color: #89b2bf5c; }
+[data-theme='preview-kraken'] .login-card::before,
+[data-theme='preview-kraken'] .login-card::after { background: linear-gradient(90deg, transparent, #96bbc4); }
+[data-theme='preview-kraken'] .card-diamond { border-color: #a0c9cc; }
+[data-theme='preview-kraken'] .brand h1,
+[data-theme='preview-kraken'] .login-card h2 { color: #e7f1f3; }
+[data-theme='preview-kraken'] .brand-symbol,
+[data-theme='preview-kraken'] .account-emblem { color: #b9d4dc; }
+[data-theme='preview-kraken'] .below-card,
+[data-theme='preview-kraken'] .appearance-trigger svg { color: #9bced0; }
+[data-theme='preview-kraken'] .home-seal { color: #b6d3db; border-color: #91b8c060; }
+[data-theme='preview-kraken'] .home-mobile-hero { background: radial-gradient(ellipse at 95% 0, #599fb01a, transparent 65%), linear-gradient(125deg, #1e2b32, #171f26 70%); border-color: #91b8c060; }
+[data-theme='preview-kraken'] .home-mobile-hero::after { display: none; }
+[data-theme='preview-kraken'] .home-mobile-hero h2,
+[data-theme='preview-kraken'] .home-mobile-card strong { color: #e7f1f3; }
+[data-theme='preview-kraken'] .home-mobile-hero-icon,
+[data-theme='preview-kraken'] .home-mobile-card-icon { color: #b6d3db; border-color: #91b8c060; }
+[data-theme='preview-kraken'] .home-mobile-section-heading,
+[data-theme='preview-kraken'] .home-mobile-card small,
+[data-theme='preview-kraken'] .home-mobile-card b { color: #a0d1d7; }
+[data-theme='preview-kraken'] .home-mobile-card { border-color: #89b2bf3b; }
+
+@keyframes kraken-water-drift { 0%, 100% { transform: translate(0, 6px) rotate(-.8deg); } 50% { transform: translate(var(--kraken-drift, 4px), -6px) rotate(.8deg); } }
+@keyframes kraken-light-breathe { 0%, 100% { opacity: .4; } 50% { opacity: .85; } }
+@keyframes kraken-particle-rise { 0%, 100% { opacity: 0; transform: translateY(14px); } 35%, 65% { opacity: .4; } 90% { opacity: 0; transform: translate(8px, -30px); } }
+@media (max-width: 900px) { .kraken-background-art, .kraken-particles { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .kraken-tendril-motion, .kraken-biolight, .kraken-particle { animation: none; }
+  .kraken-particle { opacity: .25; }
+}

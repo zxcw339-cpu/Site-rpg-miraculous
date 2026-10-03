@@ -8,7 +8,12 @@
   .mobile-landing-ornaments > .mobile-ornament-art { display: none; position: absolute; inset: 0; width: 100%; height: auto; }
   .mobile-landing-ornaments[data-variant='threads'] > .mobile-ornament-threads,
   .mobile-landing-ornaments[data-variant='lanterns'] > .mobile-ornament-lanterns,
-  .mobile-landing-ornaments[data-variant='feathers'] > .mobile-ornament-feathers { display: block; }
+  .mobile-landing-ornaments[data-variant='feathers'] > .mobile-ornament-feathers,
+  .mobile-landing-ornaments[data-variant='runes'] > .mobile-ornament-runes,
+  .mobile-landing-ornaments[data-variant='chains'] > .mobile-ornament-chains,
+  .mobile-landing-ornaments[data-variant='night'] > .mobile-ornament-night,
+  .mobile-landing-ornaments[data-variant='abyss'] > .mobile-ornament-abyss,
+  .mobile-landing-ornaments[data-variant='embers'] > .mobile-ornament-embers { display: block; }
   .mobile-silver-strands { stroke: #d1dce2; stroke-width: .8; opacity: .3; }
   .mobile-strand-pendant { animation: mobile-ornament-breathe 7s ease-in-out infinite; }
   .mobile-kitsune-roof { stroke: #ad8870; stroke-width: .8; opacity: .2; }
@@ -19,6 +24,28 @@
   .mobile-lantern-glow { animation: mobile-ornament-breathe 7s ease-in-out infinite; filter: drop-shadow(0 0 2px #d7a55888); }
   .mobile-nordic-gate { stroke: #bdccd6; stroke-width: .8; opacity: .2; }
   .mobile-nordic-gold { stroke: #b5a078; }
+  .mobile-raven-house { stroke: #b0a8c0; stroke-width: .8; opacity: .26; }
+  .mobile-raven-runes { opacity: .85; }
+  .mobile-raven-rune-float { --rune-lift: 10px; --rune-drift: 3px; --rune-tilt: 3deg; transform-box: fill-box; transform-origin: center; animation: raven-rune-levitate 18s ease-in-out infinite; animation-delay: var(--rune-delay); }
+  .mobile-pandora-box { opacity: .6; }
+  .mobile-pandora-box .pandora-box-artwork { stroke-width: 2; }
+  .mobile-cerberus-chains { stroke: #c4a17f; stroke-width: 1.8; opacity: .7; }
+  .mobile-strix-mask .strix-mask-outline { stroke-width: .8; opacity: .16; }
+  .mobile-strix-mask .strix-eyes { stroke-width: .8; }
+  .mobile-ornament-abyss .kraken-tendril-outline { stroke-width: 1.4; opacity: .35; }
+  .mobile-ornament-abyss .kraken-tendril-motion { --kraken-drift: 2px; }
+  .mobile-kraken-arm-right { --kraken-delay: -9s; }
+  .mobile-kraken-ripples { stroke: #92bbc4; stroke-width: .8; opacity: .16; }
+  .mobile-phoenix-halo { stroke: #c9a374; stroke-width: .8; opacity: .18; }
+  .mobile-ornament-embers .phoenix-wing-outline { stroke-width: 1; opacity: .25; }
+  .mobile-phoenix-embers { display: none; position: absolute; inset: 0; }
+  .mobile-landing-ornaments[data-variant='embers'] .mobile-phoenix-embers { display: block; }
+  .mobile-phoenix-ember-left { left: 28px; top: 96px; --phoenix-delay: -7s; --phoenix-drift: 4px; }
+  .mobile-phoenix-ember-right { right: 26px; top: 105px; --phoenix-delay: -15s; --phoenix-drift: -5px; }
+  .mobile-strix-feathers { display: none; position: absolute; inset: 0; }
+  .mobile-landing-ornaments[data-variant='night'] .mobile-strix-feathers { display: block; }
+  .mobile-strix-feather-left { left: 24px; top: 96px; width: 19px; --strix-tilt: -20deg; --strix-drift: 4px; --strix-delay: -7s; --strix-duration: 25s; }
+  .mobile-strix-feather-right { right: 27px; top: 31px; width: 17px; --strix-tilt: 18deg; --strix-drift: -4px; --strix-delay: -16s; --strix-duration: 29s; }
   .mobile-plumes { display: none; position: absolute; inset: 0; }
   .mobile-landing-ornaments[data-variant='feathers'] .mobile-plumes { display: block; }
   .mobile-plume { position: absolute; top: -65px; width: 22px; animation: mobile-plume-fall 17s linear infinite; }
@@ -32,9 +59,25 @@
   .home-mobile-hero .mobile-ornament-art { width: 360px; max-width: none; left: auto; right: -1px; height: 200px; }
   .home-mobile-hero .mobile-plume-left { display: none; }
   .home-mobile-hero .mobile-plume-right { right: 28px; }
+  .home-mobile-hero .mobile-pandora-box { transform: translate(72px, -6px) scale(.2); }
+  .home-mobile-hero .mobile-strix-mask { transform: translate(274px, 90px) scale(.5); }
+  .home-mobile-hero .mobile-strix-feather-left { display: none; }
+  .home-mobile-hero .mobile-strix-feather-right { right: 22px; }
+  .home-mobile-hero .mobile-kraken-arm-right { transform: translate(350px, 30px) scale(-.8, .8); }
+  .home-mobile-hero .mobile-phoenix-wings { transform: translate(105px, 36px); }
+  .home-mobile-hero .mobile-phoenix-halo { transform: translate(105px, 36px); }
+  .home-mobile-hero .mobile-phoenix-ember-left { display: none; }
+  .home-mobile-hero .mobile-phoenix-ember-right { right: 28px; top: 140px; }
   [data-theme='preview-wine'] .home-mobile-hero .mobile-ornament-threads,
   [data-theme='preview-kitsune'] .home-mobile-hero .mobile-ornament-lanterns,
-  [data-theme='preview-valquiria'] .home-mobile-hero .mobile-ornament-feathers { display: block; }
+  [data-theme='preview-valquiria'] .home-mobile-hero .mobile-ornament-feathers,
+  [data-theme='preview-corvo'] .home-mobile-hero .mobile-ornament-runes,
+  [data-theme='preview-cerbero'] .home-mobile-hero .mobile-ornament-chains,
+  [data-theme='preview-strix'] .home-mobile-hero .mobile-ornament-night,
+  [data-theme='preview-kraken'] .home-mobile-hero .mobile-ornament-abyss,
+  [data-theme='preview-fenix'] .home-mobile-hero .mobile-ornament-embers { display: block; }
+  [data-theme='preview-fenix'] .home-mobile-hero .mobile-phoenix-embers { display: block; }
+  [data-theme='preview-strix'] .home-mobile-hero .mobile-strix-feathers { display: block; }
   [data-theme='preview-valquiria'] .home-mobile-hero .mobile-plumes { display: block; }
 }
 
@@ -48,5 +91,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mobile-plume { animation: none; top: 48px; opacity: .25; transform: rotate(var(--plume-angle)); }
-  .mobile-lantern-sway, .mobile-lantern-glow, .mobile-strand-pendant { animation: none; }
+  .mobile-lantern-sway, .mobile-lantern-glow, .mobile-strand-pendant, .mobile-raven-rune-float { animation: none; }
 }

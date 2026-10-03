@@ -1,0 +1,62 @@
+.cerberus-atmosphere { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; user-select: none; color: #d39769; }
+.cerberus-pandora-box { position: absolute; left: 50%; top: 50%; width: min(1800px, 96vw); height: auto; transform: translate(-50%, -50%); overflow: visible; }
+.pandora-box-artwork { stroke: #b99a7e; stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
+.pandora-box-shell { opacity: .25; }
+.pandora-box-plane { fill: #242022; fill-opacity: .4; stroke: none; }
+.pandora-lid-rib { opacity: .4; }
+.pandora-box-inlay { stroke: #c19a72; opacity: .55; }
+.pandora-corner-brackets { stroke: #c9ad8b; }
+.pandora-relief-panel { opacity: .25; }
+.pandora-panel-fill { fill: #393047; fill-opacity: .15; stroke: none; }
+.pandora-relief-etching { stroke: #c3a386; opacity: .7; stroke-width: 1.35; }
+.pandora-central-lock { opacity: .23; }
+.pandora-medallion-wings { opacity: .27; stroke: #c5a681; }
+.pandora-medallion { stroke: #c5a681; stroke-opacity: .35; }
+.pandora-amber-light { stroke: #e9b578; stroke-opacity: .55; filter: drop-shadow(0 0 6px #dd8b3940); animation: pandora-light-breathe 9s ease-in-out infinite; }
+.pandora-seal-light { stroke: #ffcc8d; stroke-width: 1.8; stroke-opacity: .85; filter: drop-shadow(0 0 3px #ffbc7cb3) drop-shadow(0 0 10px #dd8b3960); animation: pandora-light-breathe 9s ease-in-out infinite; }
+.pandora-box-illumination { animation: pandora-light-breathe 11s ease-in-out infinite; opacity: .8; }
+.pandora-lit-seam { stroke: #efbc87; stroke-width: 1.15; stroke-opacity: .55; filter: drop-shadow(0 0 3px #e9a46288) drop-shadow(0 0 9px #c5783940); }
+.pandora-corner-halo { stroke: none; }
+.pandora-corner-light { fill: #ffca86; stroke: #ffe1b5; stroke-width: .8; filter: drop-shadow(0 0 4px #ffc282cc) drop-shadow(0 0 12px #e3914873); }
+.cerberus-chain-field { position: absolute; inset: 0; stroke: #d4b58d; stroke-width: 1.1; opacity: .8; }
+.cerberus-hanging-chain { position: absolute; top: -26px; width: calc(clamp(34px, 2.6vw, 50px) * var(--chain-scale)); transform: translateX(-50%); }
+.cerberus-chain-drawing { display: block; width: 100%; height: auto; overflow: visible; }
+.cerberus-chain-sway { transform-origin: 50% 0; transform-box: fill-box; animation: cerberus-chain-sway var(--chain-wind-duration, 17s) ease-in-out infinite; animation-delay: var(--chain-delay, 0s); }
+.cerberus-chain-glow { opacity: .78; filter: drop-shadow(0 0 2px #e3b77a80) drop-shadow(0 0 6px #c47d3938); animation: cerberus-chain-glow 9s ease-in-out infinite; animation-delay: var(--chain-delay, 0s); }
+.cerberus-link-highlight { stroke: #dfb492; stroke-width: .65; opacity: .45; }
+.cerberus-binding-light { stroke: #f0b68e; stroke-width: 1.2; opacity: .65; filter: drop-shadow(0 0 3px #d4744180); animation: cerberus-binding-breathe 7s ease-in-out infinite; animation-delay: var(--chain-delay, 0s); }
+
+[data-theme='preview-cerbero'] .login-button { background: linear-gradient(115deg, #8a5140, #6d3e33); border-color: #d99b6f30; }
+[data-theme='preview-cerbero'] .login-button:not(:disabled):hover { background: linear-gradient(115deg, #a5674e, #88503c); }
+[data-theme='preview-cerbero'] .login-card { border-color: #a58b715c; }
+[data-theme='preview-cerbero'] .login-card::before,
+[data-theme='preview-cerbero'] .login-card::after { background: linear-gradient(90deg, transparent, #c9a281); }
+[data-theme='preview-cerbero'] .card-diamond { border-color: #c4a17f; }
+[data-theme='preview-cerbero'] .brand h1,
+[data-theme='preview-cerbero'] .login-card h2 { color: #f0e7dd; }
+[data-theme='preview-cerbero'] .brand-symbol,
+[data-theme='preview-cerbero'] .account-emblem { color: #cab6a2; }
+[data-theme='preview-cerbero'] .below-card,
+[data-theme='preview-cerbero'] .appearance-trigger svg { color: #c1a082; }
+[data-theme='preview-cerbero'] .home-seal { color: #d1b89f; border-color: #b18d6c60; }
+[data-theme='preview-cerbero'] .home-mobile-hero { background: radial-gradient(ellipse at 95% 0, #c8825015, transparent 68%), linear-gradient(125deg, #2a2421, #1e1c1b 70%); border-color: #b18d6c60; }
+[data-theme='preview-cerbero'] .home-mobile-hero::after { display: none; }
+[data-theme='preview-cerbero'] .home-mobile-hero h2,
+[data-theme='preview-cerbero'] .home-mobile-card strong { color: #f0e7dd; }
+[data-theme='preview-cerbero'] .home-mobile-hero-icon,
+[data-theme='preview-cerbero'] .home-mobile-card-icon { color: #d1b89f; border-color: #b18d6c60; }
+[data-theme='preview-cerbero'] .home-mobile-section-heading,
+[data-theme='preview-cerbero'] .home-mobile-card small,
+[data-theme='preview-cerbero'] .home-mobile-card b { color: #d5ad89; }
+[data-theme='preview-cerbero'] .home-mobile-card { border-color: #ab8b703b; }
+
+@keyframes cerberus-chain-sway { 0%, 100% { transform: rotate(-2.1deg); } 35% { transform: rotate(2.3deg); } 70% { transform: rotate(-.8deg); } }
+@keyframes cerberus-chain-glow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes cerberus-binding-breathe { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+@keyframes pandora-light-breathe { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
+@media (max-width: 900px) {
+  .cerberus-pandora-box, .cerberus-chain-field { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cerberus-chain-sway, .cerberus-chain-glow, .cerberus-binding-light, .pandora-amber-light, .pandora-seal-light, .pandora-box-illumination { animation: none; }
+}

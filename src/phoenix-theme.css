@@ -1,0 +1,45 @@
+.phoenix-atmosphere { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; user-select: none; background: radial-gradient(ellipse at 50% 60%, #a6582710, transparent 67%); }
+.phoenix-background-art { position: absolute; left: 50%; top: 49%; width: min(1650px, 98vw); height: auto; transform: translate(-50%, -50%); overflow: visible; }
+.phoenix-wing-outline { stroke: #d0ab81; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; fill: #a0633105; opacity: .28; }
+.phoenix-feather-lines { fill: none; opacity: .65; stroke-width: .95; }
+.phoenix-wing-motion { transform-box: fill-box; transform-origin: right bottom; animation: phoenix-wing-breathe 26s ease-in-out infinite; animation-delay: var(--phoenix-delay, 0s); }
+.phoenix-plume-light { stroke: #f3c18a; stroke-width: 1.2; fill: none; stroke-linecap: round; filter: drop-shadow(0 0 3px #f3a95399) drop-shadow(0 0 10px #ce6f374d); opacity: .7; animation: phoenix-light-breathe 12s ease-in-out infinite; animation-delay: var(--phoenix-delay, 0s); }
+.phoenix-sun-halo { stroke: #c79e70; stroke-width: .9; opacity: .17; }
+.phoenix-sun-halo path { stroke: #f5c28b; stroke-width: 1.2; filter: drop-shadow(0 0 5px #eeb06080); }
+.phoenix-body-outline { stroke: #cfaa7f; stroke-width: 1.2; opacity: .19; stroke-linecap: round; stroke-linejoin: round; }
+.phoenix-ground-lines { stroke: #ae8a6a; stroke-width: .8; opacity: .16; }
+.phoenix-ember-field { position: absolute; inset: 0; }
+.phoenix-ember { position: absolute; width: 2px; height: 4px; border-radius: 50%; background: #efc18c; box-shadow: 0 0 4px #f0a45a80, 0 0 9px #dc753d33; opacity: .4; animation: phoenix-ember-rise var(--phoenix-duration, 25s) ease-in-out infinite; animation-delay: var(--phoenix-delay, 0s); }
+
+[data-theme='preview-fenix'] .login-button { background: linear-gradient(115deg, #99613c, #75442f); border-color: #e3b07733; }
+[data-theme='preview-fenix'] .login-button:not(:disabled):hover { background: linear-gradient(115deg, #b7794b, #955f3e); }
+[data-theme='preview-fenix'] .login-card { border-color: #c5a17a5c; }
+[data-theme='preview-fenix'] .login-card::before,
+[data-theme='preview-fenix'] .login-card::after { background: linear-gradient(90deg, transparent, #d6b088); }
+[data-theme='preview-fenix'] .card-diamond { border-color: #e2bd88; }
+[data-theme='preview-fenix'] .brand h1,
+[data-theme='preview-fenix'] .login-card h2 { color: #f3e9db; }
+[data-theme='preview-fenix'] .brand-symbol,
+[data-theme='preview-fenix'] .account-emblem { color: #dcc6a9; }
+[data-theme='preview-fenix'] .below-card,
+[data-theme='preview-fenix'] .appearance-trigger svg { color: #d5ae7c; }
+[data-theme='preview-fenix'] .home-seal { color: #dfc39e; border-color: #c1a17a60; }
+[data-theme='preview-fenix'] .home-mobile-hero { background: radial-gradient(ellipse at 95% 0, #c58a501a, transparent 65%), linear-gradient(125deg, #30271f, #211e1b 70%); border-color: #c1a17a60; }
+[data-theme='preview-fenix'] .home-mobile-hero::after { display: none; }
+[data-theme='preview-fenix'] .home-mobile-hero h2,
+[data-theme='preview-fenix'] .home-mobile-card strong { color: #f3e9db; }
+[data-theme='preview-fenix'] .home-mobile-hero-icon,
+[data-theme='preview-fenix'] .home-mobile-card-icon { color: #dfc39e; border-color: #c1a17a60; }
+[data-theme='preview-fenix'] .home-mobile-section-heading,
+[data-theme='preview-fenix'] .home-mobile-card small,
+[data-theme='preview-fenix'] .home-mobile-card b { color: #e1ba87; }
+[data-theme='preview-fenix'] .home-mobile-card { border-color: #c5a17a3b; }
+
+@keyframes phoenix-wing-breathe { 0%, 100% { transform: rotate(-.6deg) translateY(3px); } 50% { transform: rotate(.6deg) translateY(-3px); } }
+@keyframes phoenix-light-breathe { 0%, 100% { opacity: .45; } 50% { opacity: .9; } }
+@keyframes phoenix-ember-rise { 0% { opacity: 0; transform: translate(0, 24px) rotate(-15deg); } 25%, 60% { opacity: .5; } 100% { opacity: 0; transform: translate(var(--phoenix-drift, 8px), -70px) rotate(15deg); } }
+@media (max-width: 900px) { .phoenix-background-art, .phoenix-ember-field { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .phoenix-wing-motion, .phoenix-plume-light, .phoenix-ember { animation: none; }
+  .phoenix-ember { opacity: .3; }
+}

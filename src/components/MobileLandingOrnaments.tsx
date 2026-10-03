@@ -1,5 +1,11 @@
+import type { CSSProperties } from 'react'
 import type { ThemeDefinition } from '../themes/themes'
 import { FeatherArtwork } from './ValkyrieAtmosphere'
+import { RavenRune } from './RavenAtmosphere'
+import { CerberusChain, PandoraBoxArtwork } from './CerberusAtmosphere'
+import { StrixMaskArtwork, StrixMoon } from './StrixAtmosphere'
+import { KrakenMobileTendril } from './KrakenAtmosphere'
+import { PhoenixMobileWing } from './PhoenixAtmosphere'
 import '../mobile-landing-ornaments.css'
 
 function MobileLantern({ x, length }: { x: number; length: number }) {
@@ -35,6 +41,52 @@ export function MobileLandingOrnaments({ variant }: { variant?: ThemeDefinition[
         <path className="mobile-nordic-gold" d="m20 82 7 9-7 9m320-18-7 9 7 9M20 134h7m306 0h7" />
       </g>
     </svg>
+    <svg className="mobile-ornament-art mobile-ornament-runes" viewBox="0 0 360 200" fill="none" focusable="false">
+      <g className="mobile-raven-house">
+        <path d="m40 170 140-158 140 158h-16L180 32 56 170ZM56 170v28m248-28v28M54 148H30l-12 13h34m254-13h24l12 13h-34" />
+        <path d="m103 162 77-87 77 87h-13l-64-72-64 72ZM116 162h7v36h-7Zm121 0h7v36h-7ZM124 169l15 15m97-15-15 15" />
+      </g>
+      <g className="mobile-raven-runes">
+        {([{ x: 22, y: 79, kind: 0, delay: -3 }, { x: 338, y: 110, kind: 1, delay: -9 }, { x: 44, y: 153, kind: 4, delay: -12 }, { x: 306, y: 38, kind: 5, delay: -5 }] as const).map((rune, index) =>
+          <g key={index} transform={`translate(${rune.x} ${rune.y}) scale(.5)`}>
+            <g className="mobile-raven-rune-float" style={{ '--rune-delay': `${rune.delay}s` } as CSSProperties}>
+              <g className="raven-rune-light"><RavenRune kind={rune.kind} /></g>
+            </g>
+          </g>,
+        )}
+      </g>
+    </svg>
+    <svg className="mobile-ornament-art mobile-ornament-chains" viewBox="0 0 360 200" fill="none" focusable="false">
+      <g className="mobile-pandora-box" transform="translate(-7 -5) scale(.26)"><PandoraBoxArtwork /></g>
+      <g className="mobile-cerberus-chains">
+        <g transform="translate(20 -8) scale(.42)"><CerberusChain links={12} delay={-4} /></g>
+        <g transform="translate(340 -8) scale(.42)"><CerberusChain links={17} delay={-10} /></g>
+      </g>
+    </svg>
+    <svg className="mobile-ornament-art mobile-ornament-night" viewBox="0 0 360 200" fill="none" focusable="false">
+      <g className="mobile-strix-mask" transform="translate(180 65) scale(.65)"><StrixMaskArtwork /></g>
+      <g transform="translate(32 1) scale(.38)"><StrixMoon /></g>
+    </svg>
+    <svg className="mobile-ornament-art mobile-ornament-abyss" viewBox="0 0 360 200" fill="none" focusable="false">
+      <g className="mobile-kraken-arm-left" transform="translate(4 -13) scale(.68)"><KrakenMobileTendril /></g>
+      <g className="mobile-kraken-arm-right" transform="translate(356 -13) scale(-.68 .68)"><KrakenMobileTendril /></g>
+      <g className="mobile-kraken-ripples"><path d="M78 24q102 20 204 0M99 33q81 14 162 0" /></g>
+    </svg>
+    <svg className="mobile-ornament-art mobile-ornament-embers" viewBox="0 0 360 200" fill="none" focusable="false">
+      <g className="mobile-phoenix-halo"><path d="M84 64a98 49 0 0 1 192 0M91 68a91 44 0 0 1 178 0" /></g>
+      <g className="mobile-phoenix-wings">
+        <g transform="translate(180 -6) scale(.85)"><PhoenixMobileWing /></g>
+        <g transform="translate(180 -6) scale(-.85 .85)" style={{ '--phoenix-delay': '-12s' } as CSSProperties}><PhoenixMobileWing /></g>
+      </g>
+    </svg>
+    <div className="mobile-phoenix-embers">
+      <span className="phoenix-ember mobile-phoenix-ember-left" />
+      <span className="phoenix-ember mobile-phoenix-ember-right" />
+    </div>
+    <div className="mobile-strix-feathers">
+      <span className="strix-feather mobile-strix-feather-left"><FeatherArtwork /></span>
+      <span className="strix-feather mobile-strix-feather-right"><FeatherArtwork /></span>
+    </div>
     <div className="mobile-plumes">
       <span className="mobile-plume mobile-plume-left"><FeatherArtwork /></span>
       <span className="mobile-plume mobile-plume-right"><FeatherArtwork /></span>
