@@ -8,7 +8,7 @@ Com o Supabase configurado, cadastro e login por nome ou e-mail, senha e Discord
 
 - Cada campanha tem um código de convite único e permanente. O jogador pode vincular uma ficha pessoal à campanha em que participa; o mestre cria NPCs no painel da mesa.
 - O jogador edita seus dados civis. O mestre pode corrigir a ficha vinculada, configurar bônus de transformação e habilidades. Dados civis e bônus da forma são somados nas rolagens.
-- A aba **Miraculous** do mestre permite vetar formas na mesa inteira ou em uma ficha, além de adicionar Miraculous próprios. O veto oculta a transformação e preserva os bônus configurados. Ao transformar, a ficha assume o tema da forma; voltar ao civil restaura a aparência escolhida. Formas sem ilustração própria usam uma paleta discreta.
+- A aba **Miraculous** do mestre permite vetar formas na mesa inteira ou em uma ficha, além de adicionar Miraculous próprios. O veto oculta a transformação e preserva os bônus configurados. Ao transformar, a ficha assume o tema da forma; voltar ao civil restaura a aparência escolhida. Formas sem tema próprio usam o tema base branco.
 - **Conhecimento** e **Ofício** têm especialidade editável, exibida também nas rolagens, sem alterar o bônus da perícia.
 - Retratos e imagens de aparência das fichas, fotos de NPCs e arquivos do mural são guardados em armazenamento privado. O mural aceita textos, imagens, GIFs e vídeos nos formatos indicados na interface.
 - Cada publicação de mídia aceita até **8 arquivos**: PNG, JPG, WebP e GIF até 5 MB por arquivo; MP4 e WebM até 20 MB. Na edição, é possível manter, adicionar ou retirar anexos individualmente.

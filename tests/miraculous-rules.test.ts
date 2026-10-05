@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { allowedMiraculous, emptyMiraculousRules, miraculousCatalog, normalizeMiraculousRules } from '../src/miraculous-model.ts'
 import { emptySheetDetails, formGrant, normalizeSheetDetails, rollSheetTest, skillLabel } from '../src/sheet-model.ts'
-import { getFormTheme, defaultTheme } from '../src/themes/themes.ts'
+import { getFormTheme, defaultTheme, baseFormTheme } from '../src/themes/themes.ts'
 
 test('campaign veto wins over individual permission and other campaigns remain independent', () => {
   const rules = emptyMiraculousRules()
@@ -41,10 +41,13 @@ test('catalog normalization excludes duplicate and reserved identities', () => {
   assert.equal(miraculousCatalog(rules).length, 20)
   assert.deepEqual(rules.disabledFormIds, ['custom-a'])
 })
-test('every standard form has a matching theme and custom forms can select finished artwork', () => {
+test('forms without finished themes use the white base and custom forms can select finished artwork', () => {
   const forms = miraculousCatalog()
   for (const form of forms) assert.ok(getFormTheme(form).id !== defaultTheme.id || form.id === 'aranha')
   assert.equal(getFormTheme(forms.find(form => form.id === 'kitsune')!).id, 'preview-kitsune')
+  for (const id of ['pegaso', 'jormungandr', 'hidra', 'minotauro', 'fenrir', 'sereia', 'gargula', 'qilin', 'esfinge', 'grifo', 'morcego'])
+    assert.equal(getFormTheme(forms.find(form => form.id === id)!), baseFormTheme)
+  assert.equal(getFormTheme({ id: 'custom-a', name: 'Novo', concept: '' }), baseFormTheme)
   assert.equal(getFormTheme({ id: 'custom-a', name: 'Novo', concept: '', themeId: 'preview-corvo' }).id, 'preview-corvo')
 })
 test('knowledge and craft specialties persist without changing skill identities or roll bonuses', () => {

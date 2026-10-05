@@ -2,7 +2,9 @@
 
 ## Atualização de 05/10/2026 — formas, anexos e celular
 
-A aba **Miraculous** permite ao mestre vetar transformações na mesa inteira ou em fichas individuais e cadastrar formas próprias. Os bônus continuam salvos ao vetar uma forma. A transformação muda a aparência da ficha; retornar ao civil restaura o tema escolhido. Formas que ainda não têm arte própria usam uma paleta discreta.
+A aba **Miraculous** permite ao mestre vetar transformações na mesa inteira ou em fichas individuais e cadastrar formas próprias. Os bônus continuam salvos ao vetar uma forma. A transformação muda a aparência da ficha; retornar ao civil restaura o tema escolhido. Formas que ainda não têm tema próprio usam o tema base branco.
+
+A barra rápida da ficha rola somente o conteúdo da seção escolhida. O cabeçalho e o botão Salvar permanecem visíveis. A correção foi conferida no computador e em uma tela de celular de 390 × 844.
 
 Publicações de mídia aceitam até oito arquivos: PNG, JPG, WebP e GIF até 5 MB por arquivo; MP4 e WebM até 20 MB. A edição preserva os anexos mantidos e permite adicionar ou retirar arquivos individualmente. Conhecimento e Ofício têm especialidades editáveis, inclusive na identificação das rolagens. Os controles da Comunidade ficaram mais compactos no celular, dando mais espaço ao Mural e ao Chat.
 

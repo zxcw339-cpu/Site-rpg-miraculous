@@ -239,20 +239,32 @@ const formThemeIds: Record<string, string> = {
   aranha: 'preview-wine', kitsune: 'preview-kitsune', valquiria: 'preview-valquiria',
   'corvos-de-odin': 'preview-corvo', cerbero: 'preview-cerbero', strix: 'preview-strix', kraken: 'preview-kraken', fenix: 'preview-fenix',
 }
-const formColors: Record<string, [string, string]> = {
-  pegaso: ['#617b9b', '#c5d7ef'], jormungandr: ['#4a7567', '#abd4bc'], hidra: ['#66773d', '#c4d796'],
-  minotauro: ['#805242', '#d4ac8b'], fenrir: ['#536b83', '#bbcbdc'], sereia: ['#427f85', '#a5d8d9'],
-  gargula: ['#6c7279', '#c6c8cb'], qilin: ['#5f846b', '#c6dfc7'], esfinge: ['#9a794c', '#dfc8a2'],
-  grifo: ['#927446', '#dfc18c'], morcego: ['#695180', '#bda4d5'],
+export const baseFormTheme: ThemeDefinition = {
+  id: 'form-base',
+  name: 'Base',
+  description: 'Grafite e branco, com decoração geométrica discreta.',
+  symbol: 'diamond',
+  atmosphere: 'sigil',
+  colors: {
+    '--accent': '#e0e0e0',
+    '--accent-hover': '#ffffff',
+    '--accent-bright': '#f5f5f5',
+    '--accent-soft': 'rgba(255, 255, 255, 0.10)',
+    '--ambient': 'rgba(255, 255, 255, 0.035)',
+    '--ornament': '#d0d0d0',
+    '--button-text': '#151515',
+    '--panel-glow': 'rgba(255, 255, 255, 0.04)',
+    '--hub-surface': '#ffffff08',
+    '--hub-surface-hover': '#ffffff12',
+    '--hub-art-glow': '#ffffff12',
+    '--hub-border': '#ffffff35',
+    '--hub-border-hover': '#dedede',
+    '--hub-ink': '#e0e0e0',
+    '--hub-ink-muted': '#aaaaaa',
+  },
 }
-// Forms without finished artwork receive a quiet palette, keeping the sheet readable.
+// Formas sem tema próprio compartilham o tema base branco.
 export function getFormTheme(form: { id: string; name: string; concept: string; themeId?: string }): ThemeDefinition {
   const existing = availableThemes.find(theme => theme.id === (form.themeId || formThemeIds[form.id]))
-  if (existing) return existing
-  const [accent, bright] = formColors[form.id] ?? ['#717084', '#d0cadb']
-  return { ...defaultTheme, id: `form-${form.id}`, name: form.name, description: form.concept, symbol: 'diamond', atmosphere: 'sigil',
-    colors: { ...defaultTheme.colors, '--accent': accent, '--accent-hover': accent, '--accent-bright': bright,
-      '--accent-soft': `${accent}55`, '--ambient': accent, '--ornament': bright, '--panel-glow': `${accent}22`,
-      '--hub-surface': `linear-gradient(135deg, ${accent}20, #17191b)`, '--hub-surface-hover': `linear-gradient(135deg, ${accent}35, #1e2022)`,
-      '--hub-art-glow': `${accent}35`, '--hub-border': `${bright}55`, '--hub-border-hover': bright, '--hub-ink': '#e9e6df', '--hub-muted': '#b2ada7' } }
+  return existing ?? baseFormTheme
 }

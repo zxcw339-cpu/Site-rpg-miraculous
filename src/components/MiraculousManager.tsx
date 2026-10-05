@@ -49,7 +49,7 @@ export function MiraculousManager({ rules, characters, onChange, saving }: {
     })}</div>
     <details className="miraculous-custom-form"><summary>＋ Adicionar Miraculous à mesa</summary><form onSubmit={add}>
       <div className="campaign-form-grid"><label>Nome<input value={name} maxLength={80} required disabled={saving} onChange={event => setName(event.target.value)} /></label><label>Conceito<input value={concept} maxLength={120} placeholder="Ex.: A Memória" disabled={saving} onChange={event => setConcept(event.target.value)} /></label></div>
-      <label>Tema na transformação<select value={themeId} disabled={saving} onChange={event => setThemeId(event.target.value)}><option value="">Paleta discreta</option>{availableThemes.map(theme => <option key={theme.id} value={theme.id}>{theme.name}</option>)}</select></label>
+      <label>Tema na transformação<select value={themeId} disabled={saving} onChange={event => setThemeId(event.target.value)}><option value="">Tema base branco</option>{availableThemes.map(theme => <option key={theme.id} value={theme.id}>{theme.name}</option>)}</select></label>
       {error && <p role="alert">{error}</p>}<button className="hub-button hub-button-primary" disabled={saving}>Adicionar Miraculous</button>
     </form></details>
   </section>

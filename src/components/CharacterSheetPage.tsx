@@ -61,6 +61,7 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, mira
   const editRevision = useRef(0)
   const savedRevision = useRef(0)
   const iconClicks = useRef({ count: 0, last: 0 })
+  const sheetScrollRef = useRef<HTMLDivElement>(null)
   const forms = allowedMiraculous(miraculousRules, sheet.id)
   const selectedForm = forms.find(form => form.id === activeForm)
   const formName = selectedForm?.name ?? 'Civil'
@@ -177,8 +178,21 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, mira
     }
   }
 
+  function openSection(target: string) {
+    const scroller = sheetScrollRef.current
+    const heading = scroller?.querySelector<HTMLElement>(`#${target}`)
+    if (!scroller || !heading) return
+    const section = heading.closest<HTMLElement>('.sheet-panel') ?? heading
+    const indexHeight = scroller.querySelector('.sheet-page-index')?.getBoundingClientRect().height ?? 0
+    const top = scroller.scrollTop + section.getBoundingClientRect().top - scroller.getBoundingClientRect().top - indexHeight - 16
+    setActiveSection(target)
+    scroller.scrollTo({ top: Math.max(0, top), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+  }
+
   function trackSection(event: UIEvent<HTMLDivElement>) {
-    const guide = event.currentTarget.getBoundingClientRect().top + 90
+    const scroller = event.currentTarget
+    const indexHeight = scroller.querySelector('.sheet-page-index')?.getBoundingClientRect().height ?? 0
+    const guide = scroller.getBoundingClientRect().top + indexHeight + 44
     let visibleSection: string = sheetSections[0][0]
     for (const [id] of sheetSections) {
       const heading = document.getElementById(id)
@@ -194,10 +208,10 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, mira
     </header>
     {contextNote && <p className="sheet-page-context-note">{contextNote}</p>}
     {(error || message) && <p className={`sheet-page-feedback ${error ? 'sheet-page-error' : ''}`} role={error ? 'alert' : 'status'}>{error || message}</p>}
-    <div className="sheet-page-scroll" onScroll={trackSection}>
+    <div className="sheet-page-scroll" ref={sheetScrollRef} onScroll={trackSection}>
       <nav className="sheet-page-index" aria-label="Seções da ficha">
         <span className="sheet-page-index-label" aria-hidden="true">NA FICHA</span>
-        {sheetSections.map(([target, label]) => <button key={target} type="button" aria-current={activeSection === target ? 'location' : undefined} onClick={() => { setActiveSection(target); document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{label}</button>)}
+        {sheetSections.map(([target, label]) => <button key={target} type="button" aria-current={activeSection === target ? 'location' : undefined} onClick={() => openSection(target)}>{label}</button>)}
       </nav>
       <div className="sheet-page-grid">
         <div className="sheet-page-column">
