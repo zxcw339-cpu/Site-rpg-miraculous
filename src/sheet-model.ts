@@ -39,10 +39,16 @@ export type SheetForm = 'civil' | FormId
 export interface SheetRoll { dice: number[]; bonus: number; total: number }
 type Amount = number | null
 
+export interface SheetItem { id: string; name: string; notes: string }
+export interface SheetAbility { id: string; kind: AbilityKind; name: string; description: string }
+export interface FormResources { inventory: SheetItem[]; abilities: SheetAbility[] }
+
 export interface FormGrants {
   id: FormId
   attributes: Partial<Record<AttributeName, number>>
   skills: Record<string, number> // Keyed by stable skill id, not its editable name.
+  inventory?: SheetItem[]
+  abilities?: SheetAbility[]
 }
 
 export interface SheetDetails {
@@ -58,8 +64,8 @@ export interface SheetDetails {
   attributes: Record<AttributeName, { civil: Amount }>
   skills: { id: string; name: string; civil: Amount; specialty?: string }[]
   forms: FormGrants[]
-  inventory: { id: string; name: string; notes: string }[]
-  abilities: { id: string; kind: AbilityKind; name: string; description: string }[]
+  inventory: SheetItem[]
+  abilities: SheetAbility[]
   notes: string
 }
 
@@ -69,7 +75,7 @@ export function emptySheetDetails(): SheetDetails {
     resources: Object.fromEntries(resourceNames.map(name => [name, { current: null, max: null }])) as SheetDetails['resources'],
     attributes: Object.fromEntries(attributeNames.map(name => [name, { civil: null }])) as SheetDetails['attributes'],
     skills: baseSkillNames.map(name => ({ id: crypto.randomUUID(), name, civil: null })),
-    forms: availableForms.map(form => ({ id: form.id, attributes: {}, skills: {} })),
+    forms: availableForms.map(form => ({ id: form.id, attributes: {}, skills: {}, inventory: [], abilities: [] })),
     inventory: [], abilities: [], notes: '',
   }
 }
@@ -87,7 +93,12 @@ export function normalizeSheetDetails(input?: Partial<SheetDetails>): SheetDetai
       ...(supportsSpecialty(skill.name) ? { specialty: typeof skill.specialty === 'string' ? skill.specialty.slice(0, 80) : '' } : {}) })),
     forms: [...new Set([...availableForms.map(form => form.id), ...(input.forms ?? []).map(form => form.id)])]
       .filter(id => /^[a-z0-9][a-z0-9-]{0,79}$/.test(id) && id !== 'civil')
-      .map(id => input.forms?.find(entry => entry.id === id) ?? { id, attributes: {}, skills: {} }),
+      .map(id => {
+        const form = input.forms?.find(entry => entry.id === id)
+        return { id, attributes: form?.attributes ?? {}, skills: form?.skills ?? {},
+          inventory: Array.isArray(form?.inventory) ? form.inventory : [],
+          abilities: Array.isArray(form?.abilities) ? form.abilities : [] }
+      }),
   }
 }
 
@@ -110,6 +121,39 @@ export function formGrant(details: SheetDetails, formId: FormId, kind: 'attribut
 
 export function effectiveValue(base: Amount, bonus: number): Amount {
   return base === null ? null : base + bonus
+}
+
+// Transformation resources never enter the civil inventory or common abilities.
+// Selecting another form only changes the view; it does not move or delete data.
+export function formResources(details: SheetDetails, formId: SheetForm): FormResources {
+  const form = formId === 'civil' ? undefined : details.forms.find(entry => entry.id === formId)
+  return { inventory: form?.inventory ?? [], abilities: form?.abilities ?? [] }
+}
+
+export function editableForm(details: SheetDetails, formId: FormId): FormGrants & FormResources {
+  if (formId === 'civil') throw new Error('Os recursos civis são editados no inventário da ficha.')
+  let form = details.forms.find(entry => entry.id === formId)
+  if (!form) { form = { id: formId, attributes: {}, skills: {} }; details.forms.push(form) }
+  form.inventory ??= []
+  form.abilities ??= []
+  return form as FormGrants & FormResources
+}
+
+export function assignSheetResource(details: SheetDetails, kind: keyof FormResources, id: string, from: SheetForm, to: SheetForm): void {
+  if (from === to) return
+  const source = from === 'civil' ? details : editableForm(details, from)
+  const destination = to === 'civil' ? details : editableForm(details, to)
+  if (kind === 'inventory') {
+    const item = source.inventory.find(entry => entry.id === id)
+    if (!item) return
+    source.inventory = source.inventory.filter(entry => entry.id !== id)
+    destination.inventory.push(item)
+  } else {
+    const ability = source.abilities.find(entry => entry.id === id)
+    if (!ability) return
+    source.abilities = source.abilities.filter(entry => entry.id !== id)
+    destination.abilities.push(ability)
+  }
 }
 
 export function rollDicePool(count: number, bonus = 0, random = Math.random): SheetRoll {
@@ -152,6 +196,16 @@ export function validateSheetDetails(details: SheetDetails): string | null {
     for (const bonus of Object.values(form.skills)) {
       if (!Number.isSafeInteger(bonus) || bonus < 0 || bonus % 5 !== 0) return 'Bônus de perícia da transformação: use passos de 5.'
     }
+    for (const item of form.inventory ?? []) {
+      if (!item.name.trim()) return 'Dê um nome para cada item da caixa do Miraculous.'
+      if (item.name.length > 80 || item.notes.length > 500) return 'Os itens do Miraculous aceitam nome de até 80 caracteres e detalhes de até 500.'
+    }
+    for (const ability of form.abilities ?? []) {
+      if (!ability.name.trim()) return 'Dê um nome para cada habilidade da caixa do Miraculous.'
+      if (!['Passiva', 'Técnica', 'Miraculous'].includes(ability.kind)) return 'Escolha um tipo válido para a habilidade do Miraculous.'
+      if (ability.name.length > 80 || ability.description.length > 1200) return 'As habilidades do Miraculous aceitam nome de até 80 caracteres e descrição de até 1200.'
+    }
   }
+  if (new TextEncoder().encode(JSON.stringify(details.forms)).length > 65536) return 'As caixas dos Miraculous desta ficha estão muito grandes. Reduza os detalhes antes de salvar.'
   return null
 }

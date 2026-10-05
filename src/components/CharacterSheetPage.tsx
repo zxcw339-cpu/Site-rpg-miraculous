@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, RefObject, UIEvent } from 'react'
 import type { CharacterSheet } from '../hub-data'
 import type { CampaignRoll } from '../campaign-model'
-import { attributeNames, effectiveValue, formGrant, normalizeSheetDetails, parseAmount, resourceNames, rollDicePool, rollSheetTest, validateSheetDetails, supportsSpecialty, skillLabel } from '../sheet-model'
+import { assignSheetResource, attributeNames, editableForm, effectiveValue, formGrant, formResources, normalizeSheetDetails, parseAmount, resourceNames, rollDicePool, rollSheetTest, validateSheetDetails, supportsSpecialty, skillLabel } from '../sheet-model'
 import { allowedMiraculous, type MiraculousRules } from '../miraculous-model'
 import type { MiraculousDefinition } from '../sheet-model'
-import type { AbilityKind, AttributeName, SheetDetails, SheetForm, SheetRoll } from '../sheet-model'
+import type { AttributeName, FormResources, SheetDetails, SheetForm, SheetRoll } from '../sheet-model'
 import { Modal } from './Modal'
+import { AbilityEntries, FormResourcesEditor, InventoryEntries } from './SheetFormResources'
 import '../sheet-page.css'
 
 interface Props {
@@ -51,6 +52,8 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, mira
   const [activeForm, setActiveForm] = useState<SheetForm>('civil')
   const [miraculousOpen, setMiraculousOpen] = useState(false)
   const [grantEditorOpen, setGrantEditorOpen] = useState(false)
+  const [resourceEditorOpen, setResourceEditorOpen] = useState(false)
+  const [resourceFormId, setResourceFormId] = useState('')
   const [rollAttribute, setRollAttribute] = useState<AttributeName>('Força')
   const [activeSection, setActiveSection] = useState<string>(sheetSections[0][0])
   const [rollResult, setRollResult] = useState<RollResult | null>(null)
@@ -66,6 +69,8 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, mira
   const selectedForm = forms.find(form => form.id === activeForm)
   const formName = selectedForm?.name ?? 'Civil'
   const formSignature = JSON.stringify(selectedForm ?? null)
+  const activeResources = formResources(draft, selectedForm ? activeForm : 'civil')
+  const resourceEditorForm = forms.find(form => form.id === resourceFormId)
 
   useEffect(() => {
     if (activeForm !== 'civil' && !selectedForm) { setActiveForm('civil'); setGrantEditorOpen(false) }
@@ -177,6 +182,19 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, mira
       setRollError(cause instanceof Error ? cause.message : 'Não foi possível registrar a rolagem.')
     }
   }
+  function openResourceEditor() {
+    if (!masterManaged || !forms.length) return
+    setResourceFormId(selectedForm?.id ?? resourceEditorForm?.id ?? forms[0].id)
+    setResourceEditorOpen(true)
+  }
+  function resourceAssignment(kind: keyof FormResources, id: string, from: SheetForm, label: string) {
+    if (!masterManaged) return null
+    return <label className="sheet-field sheet-resource-assignment">Vínculo<select aria-label={`Vínculo de ${label}`} value={from} onChange={event => {
+      const to = event.target.value
+      if (to !== 'civil' && !forms.some(form => form.id === to)) return
+      edit(next => assignSheetResource(next, kind, id, from, to))
+    }}><option value="civil">{kind === 'inventory' ? 'Inventário civil' : 'Habilidade geral — inclui civil'}</option>{forms.map(form => <option value={form.id} key={form.id}>Somente {form.name}</option>)}</select></label>
+  }
 
   function openSection(target: string) {
     const scroller = sheetScrollRef.current
@@ -265,8 +283,31 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, mira
         </div>
       </div>
       <div className="sheet-page-sections">
-        <section className="sheet-panel" aria-labelledby="sheet-inventory-title"><div className="sheet-panel-title"><span>05</span><h2 id="sheet-inventory-title">Inventário</h2></div>{draft.inventory.length === 0 && <p className="sheet-panel-help">Nenhum item adicionado.</p>}{draft.inventory.map(item => <div className="sheet-entry" key={item.id}><label className="sheet-field">Item<input value={item.name} maxLength={80} disabled={!civilEditable} placeholder="Nome do item" onChange={event => edit(next => { next.inventory.find(entry => entry.id === item.id)!.name = event.target.value })} /></label><label className="sheet-field">Detalhes<textarea value={item.notes} maxLength={500} disabled={!civilEditable} placeholder="Dano, alcance ou observações" onChange={event => edit(next => { next.inventory.find(entry => entry.id === item.id)!.notes = event.target.value })} /></label>{civilEditable && <button className="sheet-remove-text" type="button" onClick={() => edit(next => { next.inventory = next.inventory.filter(entry => entry.id !== item.id) })}>Remover item</button>}</div>)}{civilEditable && <button className="hub-button sheet-add" type="button" onClick={() => edit(next => { next.inventory.push({ id: crypto.randomUUID(), name: '', notes: '' }) })}>＋ Adicionar item</button>}</section>
-        <section className="sheet-panel" aria-labelledby="sheet-abilities-title"><div className="sheet-panel-title"><span>06</span><h2 id="sheet-abilities-title">Habilidades</h2><small>GESTÃO DO MESTRE</small></div>{draft.abilities.length === 0 && <p className="sheet-panel-help">O mestre ainda não adicionou habilidades a esta ficha.</p>}{draft.abilities.map(ability => <div className="sheet-entry" key={ability.id}><label className="sheet-field">Tipo<select value={ability.kind} disabled={!masterManaged} onChange={event => edit(next => { next.abilities.find(entry => entry.id === ability.id)!.kind = event.target.value as AbilityKind })}><option>Passiva</option><option>Técnica</option><option>Miraculous</option></select></label><label className="sheet-field">Nome<input value={ability.name} maxLength={80} disabled={!masterManaged} onChange={event => edit(next => { next.abilities.find(entry => entry.id === ability.id)!.name = event.target.value })} /></label><label className="sheet-field">Descrição<textarea value={ability.description} maxLength={1200} disabled={!masterManaged} onChange={event => edit(next => { next.abilities.find(entry => entry.id === ability.id)!.description = event.target.value })} /></label>{masterManaged && <button className="sheet-remove-text" type="button" onClick={() => edit(next => { next.abilities = next.abilities.filter(entry => entry.id !== ability.id) })}>Remover habilidade</button>}</div>)}{masterManaged && <button className="hub-button sheet-add" type="button" onClick={() => edit(next => { next.abilities.push({ id: crypto.randomUUID(), kind: 'Técnica', name: '', description: '' }) })}>＋ Adicionar habilidade</button>}</section>
+        <section className="sheet-panel" aria-labelledby="sheet-inventory-title">
+          <div className="sheet-panel-title"><span>05</span><h2 id="sheet-inventory-title">Inventário</h2></div>
+          {masterManaged && <button className="hub-button sheet-box-button" type="button" disabled={!forms.length} onClick={openResourceEditor}>Caixa dos Miraculous</button>}
+          <section className="sheet-resource-group" aria-label="Inventário civil"><h3>Inventário civil</h3>
+            <p className="sheet-panel-help">Os itens adicionados aqui pertencem ao civil e continuam disponíveis nas transformações.</p>
+            {!draft.inventory.length && <p className="sheet-panel-help">Nenhum item civil adicionado.</p>}
+            <InventoryEntries items={draft.inventory} onChange={civilEditable ? items => edit(next => { next.inventory = items }) : undefined} addLabel="＋ Adicionar item civil" assignment={masterManaged ? item => resourceAssignment('inventory', item.id, 'civil', item.name || 'item civil') : undefined} />
+          </section>
+          {selectedForm && <section className="sheet-resource-group sheet-form-resources" aria-label={`Itens de ${formName}`}><h3>Itens de {formName}</h3><p className="sheet-panel-help">Disponíveis somente nesta transformação. Configurados pelo mestre.</p>
+            {!activeResources.inventory.length && <p className="sheet-panel-help">Nenhum item exclusivo desta forma.</p>}
+            <InventoryEntries items={activeResources.inventory} />
+          </section>}
+        </section>
+        <section className="sheet-panel" aria-labelledby="sheet-abilities-title">
+          <div className="sheet-panel-title"><span>06</span><h2 id="sheet-abilities-title">Habilidades</h2><small>GESTÃO DO MESTRE</small></div>
+          {masterManaged && <button className="hub-button sheet-box-button" type="button" disabled={!forms.length} onClick={openResourceEditor}>Configurar habilidades por Miraculous</button>}
+          <section className="sheet-resource-group" aria-label="Habilidades gerais"><h3>Habilidades gerais</h3><p className="sheet-panel-help">Habilidades concedidas pelo mestre que também estão disponíveis no civil.</p>
+            {!draft.abilities.length && <p className="sheet-panel-help">Nenhuma habilidade geral adicionada.</p>}
+            <AbilityEntries abilities={draft.abilities} onChange={masterManaged ? abilities => edit(next => { next.abilities = abilities }) : undefined} addLabel="＋ Adicionar habilidade geral" assignment={masterManaged ? ability => resourceAssignment('abilities', ability.id, 'civil', ability.name || 'habilidade geral') : undefined} />
+          </section>
+          {selectedForm && <section className="sheet-resource-group sheet-form-resources" aria-label={`Habilidades de ${formName}`}><h3>Habilidades de {formName}</h3><p className="sheet-panel-help">Disponíveis somente nesta transformação. Configuradas pelo mestre.</p>
+            {!activeResources.abilities.length && <p className="sheet-panel-help">Nenhuma habilidade exclusiva desta forma.</p>}
+            <AbilityEntries abilities={activeResources.abilities} />
+          </section>}
+        </section>
       </div>
       <div className="sheet-page-lower">
         <section className="sheet-panel" aria-labelledby="sheet-lore-title"><div className="sheet-panel-title"><span>07</span><h2 id="sheet-lore-title">Lore</h2></div><label className="sheet-field">História do personagem<textarea value={draft.lore} maxLength={5000} disabled={!civilEditable} placeholder="Origem, acontecimentos e motivações" onChange={event => edit(next => { next.lore = event.target.value })} /></label></section>
@@ -282,6 +323,12 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, mira
       </div>}
       <small className="sheet-roll-local">{onRecordRoll ? 'Rolagem registrada no histórico da mesa.' : 'Rolagem local · não enviada à mesa.'}</small>
     </aside>}
+    {masterManaged && resourceEditorOpen && resourceEditorForm && <FormResourcesEditor forms={forms} formId={resourceFormId} resources={formResources(draft, resourceFormId)} onFormChange={setResourceFormId}
+      onInventoryChange={items => edit(next => { editableForm(next, resourceFormId).inventory = items })}
+      onAbilitiesChange={abilities => edit(next => { editableForm(next, resourceFormId).abilities = abilities })}
+      inventoryAssignment={item => resourceAssignment('inventory', item.id, resourceFormId, item.name || 'item do Miraculous')}
+      abilityAssignment={ability => resourceAssignment('abilities', ability.id, resourceFormId, ability.name || 'habilidade do Miraculous')}
+      onClose={() => setResourceEditorOpen(false)} />}
     {masterManaged && grantEditorOpen && activeForm !== 'civil' && <Modal open onClose={() => setGrantEditorOpen(false)} titleId="sheet-grant-title" className="sheet-grant-modal">
       <div className="sheet-panel">
         <p className="home-overline">CONFIGURAÇÃO DO MESTRE</p><h2 id="sheet-grant-title">Bônus de {formName}</h2>

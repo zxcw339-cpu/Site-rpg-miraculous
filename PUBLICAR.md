@@ -1,5 +1,13 @@
 # Publicação do site
 
+## Atualização de 05/10/2026 — caixas de itens e habilidades
+
+Cada ficha tem uma caixa de itens e habilidades por Miraculous, configurada exclusivamente pelo mestre. O jogador pode adicionar itens apenas ao inventário civil. Os recursos exclusivos da forma ficam ocultos ao retornar ao civil ou escolher outro Miraculous, sem serem apagados. O campo Vínculo do mestre move recursos existentes sem duplicá-los. A publicação desta atualização usa o fluxo automático do GitHub Pages após o envio à branch `main`.
+
+Esta atualização usa o campo JSON de formas em `rpg_sheet_master_data` e suas permissões existentes. **Não exige migração nem alteração no Supabase.** Passaram 44 testes de aplicação, 122 verificações SQL isoladas e build de produção. A interface foi conferida nas visões de mestre e jogador, incluindo criação, salvamento, reabertura, troca entre Corvo/Civil/Kitsune e tela de 390 × 844 sem rolagem horizontal.
+
+O mestre abre uma ficha em Jogadores, escolhe Inventário → Caixa dos Miraculous, seleciona a forma, cadastra seus itens/habilidades, conclui a edição e salva a ficha. Recursos antigos permanecem gerais/civis até que o mestre altere seu Vínculo; não foram classificados automaticamente.
+
 ## Atualização de 05/10/2026 — formas, anexos e celular
 
 A aba **Miraculous** permite ao mestre vetar transformações na mesa inteira ou em fichas individuais e cadastrar formas próprias. Os bônus continuam salvos ao vetar uma forma. A transformação muda a aparência da ficha; retornar ao civil restaura o tema escolhido. Formas que ainda não têm tema próprio usam o tema base branco.

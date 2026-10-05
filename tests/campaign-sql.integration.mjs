@@ -143,6 +143,20 @@ try {
   await db.exec(`insert into public.rpg_sheet_master_data(sheet_id,forms,abilities)
     values ('${sheetId}','[{"id":"kitsune","skills":{"luta":5}}]','[{"name":"Poder"}]')`)
   check((await rows(`select forms->0->>'id' as form from public.rpg_sheet_master_data`))[0].form, 'kitsune')
+  // Per-form items and abilities use the same master-only row as bonuses.
+  const resourceForms = [{ id: 'corvos-de-odin', attributes: {}, skills: {}, inventory: [{ id: 'weapon', name: 'Arma do Corvo', notes: '1d12' }], abilities: [{ id: 'memory', kind: 'Miraculous', name: 'Memória', description: 'Poder da forma' }] }]
+  await db.exec(`update public.rpg_sheet_master_data set forms='${JSON.stringify(resourceForms)}' where sheet_id='${sheetId}'`)
+  check((await rows(`select forms from public.rpg_sheet_master_data where sheet_id='${sheetId}'`))[0].forms, resourceForms)
+  await as(player)
+  check((await rows(`select forms from public.rpg_sheet_master_data where sheet_id='${sheetId}'`))[0].forms, resourceForms)
+  check(await rows(`update public.rpg_sheet_master_data set forms='[]' where sheet_id='${sheetId}' returning sheet_id`), [])
+  await denied(`update public.rpg_sheets set details='{"forms":[{"id":"corvos-de-odin","inventory":[{"name":"forged"}]}]}' where id='${sheetId}'`, /rpg_sheet_civil_details_only/i)
+  await db.exec(`update public.rpg_sheets set details='{"inventory":[{"id":"bag","name":"Mochila","notes":"Civil"}]}' where id='${sheetId}'`)
+  check((await rows(`select details->'inventory' as inventory from public.rpg_sheets where id='${sheetId}'`))[0].inventory[0].name, 'Mochila')
+  check((await rows(`select forms from public.rpg_sheet_master_data where sheet_id='${sheetId}'`))[0].forms, resourceForms)
+  await as(outsider)
+  check(await rows(`select sheet_id from public.rpg_sheet_master_data where sheet_id='${sheetId}'`), [])
+  await as(master)
   await db.exec(`insert into public.rpg_campaign_master_data(campaign_id,data) values ('${campaignId}','{"secret":"editado"}') on conflict(campaign_id) do update set campaign_id=excluded.campaign_id,data=excluded.data`)
   check((await rows(`select data->>'secret' as secret from public.rpg_campaign_master_data`))[0].secret, 'editado')
   const npcImagePath = `${master}/${campaignId}/${npcId}/portrait/a.png`

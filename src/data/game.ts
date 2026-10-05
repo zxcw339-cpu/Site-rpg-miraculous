@@ -199,7 +199,7 @@ function campaignFromRow(row: Row, currentUserId: string): Campaign {
 async function loadOverlays(sheetIds: string[]): Promise<Map<string, Row>> {
   if (!sheetIds.length) return new Map()
   const { data, error } = await requireSupabase().from('rpg_sheet_master_data').select('sheet_id,forms,abilities').in('sheet_id', sheetIds)
-  if (error) throw problem(error, 'Não foi possível carregar os bônus e habilidades das fichas.')
+  if (error) throw problem(error, 'Não foi possível carregar os bônus, itens e habilidades das fichas.')
   return new Map(rows(data).map(row => [string(row.sheet_id), row]))
 }
 
@@ -326,7 +326,7 @@ export async function linkSheet(sheetId: string, campaignId: string | null): Pro
 export async function saveMasterSheetData(sheetId: string, forms: FormGrants[], abilities: SheetDetails['abilities']): Promise<void> {
   await userId()
   const { error } = await requireSupabase().from('rpg_sheet_master_data').upsert({ sheet_id: sheetId, forms, abilities }, { onConflict: 'sheet_id' })
-  if (error) throw problem(error, 'Não foi possível salvar os bônus e habilidades desta ficha.')
+  if (error) throw problem(error, 'Não foi possível salvar os bônus, itens e habilidades desta ficha.')
 }
 
 export async function loadMiraculousRules(campaignId: string): Promise<MiraculousRules> {

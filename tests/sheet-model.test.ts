@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { availableForms, effectiveValue, emptySheetDetails, formGrant, normalizeSheetDetails, rollDicePool, rollSheetTest, validateSheetDetails } from '../src/sheet-model.ts'
+import { assignSheetResource, availableForms, editableForm, effectiveValue, emptySheetDetails, formGrant, formResources, normalizeSheetDetails, rollDicePool, rollSheetTest, validateSheetDetails } from '../src/sheet-model.ts'
 
 test('new sheets start blank and keep civil values separate from each form', () => {
   const sheet = emptySheetDetails()
@@ -85,4 +85,65 @@ test('free d20 works without a sheet and undefined attributes return a clear err
   assert.deepEqual(rollDicePool(1, 0, () => 0.95), { dice: [20], bonus: 0, total: 20 })
   assert.throws(() => rollSheetTest(emptySheetDetails(), 'civil', 'Força'), /Preencha Força/)
   assert.throws(() => rollDicePool(31), /1 a 30/)
+})
+
+test('Corvo items and abilities are visible only in Corvo and survive repeated form changes', () => {
+  const sheet = emptySheetDetails()
+  sheet.inventory.push({ id: 'civil', name: 'Mochila', notes: 'Itens pessoais' })
+  sheet.abilities.push({ id: 'common', kind: 'Passiva', name: 'Observador', description: 'Sempre disponível' })
+  const corvo = editableForm(sheet, 'corvos-de-odin')
+  corvo.inventory.push({ id: 'weapon', name: 'Arma do Corvo', notes: '1d12' })
+  corvo.abilities.push({ id: 'memory', kind: 'Miraculous', name: 'Memória', description: 'Poder da forma' })
+  const before = JSON.stringify(sheet)
+  for (const form of ['civil', 'corvos-de-odin', 'kitsune', 'civil', 'corvos-de-odin']) {
+    assert.equal(formResources(sheet, form).inventory.length, form === 'corvos-de-odin' ? 1 : 0)
+    assert.equal(formResources(sheet, form).abilities.length, form === 'corvos-de-odin' ? 1 : 0)
+    assert.equal(sheet.inventory[0].name, 'Mochila')
+    assert.equal(sheet.abilities[0].name, 'Observador')
+  }
+  assert.equal(JSON.stringify(sheet), before)
+  const reloaded = normalizeSheetDetails(JSON.parse(JSON.stringify(sheet)))
+  assert.deepEqual(formResources(reloaded, 'corvos-de-odin'), { inventory: corvo.inventory, abilities: corvo.abilities })
+  assert.deepEqual(formResources(reloaded, 'civil'), { inventory: [], abilities: [] })
+})
+
+test('master can assign existing civil resources to a form without copying them', () => {
+  const sheet = emptySheetDetails()
+  sheet.inventory.push({ id: 'weapon', name: 'Arma do Corvo', notes: 'Alcance médio' })
+  sheet.abilities.push({ id: 'power', kind: 'Técnica', name: 'Memória', description: '3 energia' })
+  assignSheetResource(sheet, 'inventory', 'weapon', 'civil', 'corvos-de-odin')
+  assignSheetResource(sheet, 'abilities', 'power', 'civil', 'corvos-de-odin')
+  assert.deepEqual(sheet.inventory, [])
+  assert.deepEqual(sheet.abilities, [])
+  assert.equal(formResources(sheet, 'corvos-de-odin').inventory[0].id, 'weapon')
+  assignSheetResource(sheet, 'inventory', 'weapon', 'corvos-de-odin', 'kitsune')
+  assert.deepEqual(formResources(sheet, 'corvos-de-odin').inventory, [])
+  assert.equal(formResources(sheet, 'kitsune').inventory[0].notes, 'Alcance médio')
+  assignSheetResource(sheet, 'inventory', 'weapon', 'kitsune', 'civil')
+  assert.equal(sheet.inventory.length, 1)
+  assert.deepEqual(formResources(sheet, 'kitsune').inventory, [])
+  assert.equal(formResources(sheet, 'corvos-de-odin').abilities[0].id, 'power')
+})
+
+test('old sheets and custom Miraculous retain grants and gain empty resource boxes', () => {
+  const sheet = normalizeSheetDetails({ forms: [{ id: 'custom-foo', attributes: { Força: 2 }, skills: { luta: 5 } }] })
+  assert.equal(formGrant(sheet, 'custom-foo', 'attribute', 'Força'), 2)
+  assert.deepEqual(formResources(sheet, 'custom-foo'), { inventory: [], abilities: [] })
+  editableForm(sheet, 'custom-foo').inventory.push({ id: 'staff', name: 'Cajado', notes: '' })
+  const reloaded = normalizeSheetDetails(JSON.parse(JSON.stringify(sheet)))
+  assert.equal(formResources(reloaded, 'custom-foo').inventory[0].name, 'Cajado')
+  assert.deepEqual(formResources(reloaded, 'civil').inventory, [])
+  assert.throws(() => editableForm(sheet, 'civil'), /recursos civis/)
+})
+
+test('incomplete form resources are rejected before saving', () => {
+  const sheet = emptySheetDetails()
+  const form = editableForm(sheet, 'corvos-de-odin')
+  form.inventory.push({ id: 'weapon', name: '', notes: '' })
+  assert.match(validateSheetDetails(sheet) ?? '', /nome.*item/)
+  form.inventory[0].name = 'Arma'
+  form.abilities.push({ id: 'power', kind: 'Técnica', name: '', description: '' })
+  assert.match(validateSheetDetails(sheet) ?? '', /nome.*habilidade/)
+  form.abilities[0].name = 'Memória'
+  assert.equal(validateSheetDetails(sheet), null)
 })
