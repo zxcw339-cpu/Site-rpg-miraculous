@@ -18,6 +18,7 @@ export function Atmosphere({ variant = 'threads', landing = false }: { variant?:
 }
 
 function DesktopAtmosphere({ variant }: { variant: ThemeDefinition['atmosphere'] }) {
+  if (variant === 'sigil') return <div className="atmosphere" aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}><svg viewBox="0 0 1600 1000" width="100%" height="100%" fill="none" preserveAspectRatio="xMidYMid slice" style={{ color: 'var(--ornament)', opacity: .12 }}><path d="M70 0v1000M1530 0v1000M40 70h1520M40 930h1520" stroke="currentColor" /><circle cx="800" cy="500" r="380" stroke="currentColor" /><circle cx="800" cy="500" r="390" stroke="currentColor" /><path d="m800 65 15 28-15 28-15-28Zm0 815 15 28-15 28-15-28Z" stroke="currentColor" /></svg></div>
   if (variant === 'lanterns') return <LanternAtmosphere />
   if (variant === 'feathers') return <ValkyrieAtmosphere />
   if (variant === 'runes') return <RavenAtmosphere />

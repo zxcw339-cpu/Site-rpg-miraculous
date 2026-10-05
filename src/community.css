@@ -227,3 +227,12 @@
   .community-post-form-actions { display:grid; grid-template-columns:1fr 1fr; }
   .community-post-form-actions button { padding:9px; }
 }
+.media-gallery { display:grid; min-width:0; gap:3px; padding:0 !important; background:#101214; overflow:hidden; }
+.media-gallery-multiple { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.media-gallery .community-media-image { display:block; min-width:0; width:100%; border:0; padding:0; background:transparent; cursor:zoom-in; }
+.media-gallery img,.media-gallery video { display:block; width:100%; max-height:360px; object-fit:contain; }
+.media-gallery-multiple img,.media-gallery-multiple video { height:180px; object-fit:cover; }
+.community-attachment-list { display:grid; gap:6px; margin:0; padding:0; list-style:none; }
+.community-attachment-list li { display:flex; gap:10px; align-items:center; justify-content:space-between; font-size:12px; }
+.community-attachment-list span { min-width:0; overflow-wrap:anywhere; }
+.community-attachment-list button { flex:none; min-height:36px; }

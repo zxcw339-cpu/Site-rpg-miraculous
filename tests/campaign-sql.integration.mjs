@@ -66,6 +66,9 @@ try {
   check((await rows(`select code from rpg_private.campaign_invites where campaign_id='${oldCampaignId}'`))[0].code, oldCode)
   await db.exec(inviteMigration)
   await db.exec(await readFile(new URL('../supabase/migrations/202609250003_rpg_invite_rate_limit.sql', import.meta.url), 'utf8'))
+  const featuresMigration = await readFile(new URL('../supabase/migrations/202610050001_miraculous_and_attachments.sql', import.meta.url), 'utf8')
+  await db.exec(featuresMigration)
+  await db.exec(featuresMigration)
   await as(master)
   check((await rows(`select public.rpg_create_campaign_invite('${oldCampaignId}') as code`))[0].code, newAlias)
   await db.exec(`delete from public.rpg_campaigns where id='${oldCampaignId}'`)
@@ -242,6 +245,33 @@ try {
   await db.exec('reset role')
   check((await rows(`select failures from rpg_private.invite_failures where user_id='${player}'`))[0].failures, 8)
 
+  // New rules follow the immutable account/campaign IDs, never display names.
+  await as(master)
+  const rulesCampaign = (await rows(`insert into public.rpg_campaigns(owner_id,name) values ('${master}','Formas e galerias') returning id`))[0].id
+  await db.exec(`insert into public.rpg_campaign_miraculous(campaign_id,rules) values ('${rulesCampaign}',
+    '{"customForms":[{"id":"custom-relogio","name":"Relógio","concept":"O Ritmo"}],"disabledFormIds":["kitsune"],"sheetDisabledFormIds":{"ficha-a":["aranha"]}}')`)
+  await db.exec('reset role')
+  await db.exec(`insert into public.rpg_campaign_members(campaign_id,user_id) values ('${rulesCampaign}','${player}')`)
+  await as(player)
+  check((await rows(`select rules->'disabledFormIds' as ids from public.rpg_campaign_miraculous where campaign_id='${rulesCampaign}'`))[0].ids, ['kitsune'])
+  check(await rows(`update public.rpg_campaign_miraculous set rules='{"customForms":[],"disabledFormIds":[],"sheetDisabledFormIds":{}}' where campaign_id='${rulesCampaign}' returning campaign_id`), [])
+  await denied(`insert into public.rpg_campaign_miraculous(campaign_id) values ('${secondCampaign}')`)
+  await as(outsider)
+  check(await rows(`select rules from public.rpg_campaign_miraculous where campaign_id='${rulesCampaign}'`), [])
+  await as(master)
+  await denied(`update public.rpg_campaign_miraculous set campaign_id='${secondCampaign}' where campaign_id='${rulesCampaign}'`, /fixa|permission/i)
+  const galleryId = (await rows(`insert into public.rpg_campaign_media(campaign_id,title,shared) values ('${rulesCampaign}','Galeria',true) returning id`))[0].id
+  const gallery = [{ id:'a',name:'a.jpg',type:'image',path:`${master}/${rulesCampaign}/${galleryId}/a.jpg` },{ id:'b',name:'b.png',type:'image',path:`${master}/${rulesCampaign}/${galleryId}/b.png` }]
+  await db.exec(`update public.rpg_campaign_media set attachments='${JSON.stringify(gallery)}' where id='${galleryId}'`)
+  await as(player)
+  check((await rows(`select attachments from public.rpg_campaign_media where id='${galleryId}'`))[0].attachments.length, 2)
+  check(await rows(`update public.rpg_campaign_media set attachments='[]' where id='${galleryId}' returning id`), [])
+  await as(master)
+  const badGallery = [{ ...gallery[0], path:`${master}/${secondCampaign}/${galleryId}/private.jpg` }]
+  await denied(`update public.rpg_campaign_media set attachments='${JSON.stringify(badGallery)}' where id='${galleryId}'`, /Anexo inválido/i)
+  await denied(`update public.rpg_campaign_media set attachments='${JSON.stringify(Array(9).fill(gallery[0]))}' where id='${galleryId}'`)
+  await db.exec(`update public.rpg_campaign_miraculous set rules='{"customForms":[],"disabledFormIds":[],"sheetDisabledFormIds":{}}' where campaign_id='${rulesCampaign}'`)
+  check((await rows(`select count(*)::int as n from public.rpg_campaign_logs where campaign_id='${rulesCampaign}' and entity_type='rpg_campaign_miraculous'`))[0].n > 0, true)
   console.log(`Campaign SQL integration: ${assertions} assertions passed (isolated PostgreSQL/PGlite; Auth and Storage mocked).`)
 } finally {
   await db.close()

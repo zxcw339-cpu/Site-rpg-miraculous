@@ -2,13 +2,17 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, RefObject, UIEvent } from 'react'
 import type { CharacterSheet } from '../hub-data'
 import type { CampaignRoll } from '../campaign-model'
-import { attributeNames, availableForms, effectiveValue, formGrant, normalizeSheetDetails, parseAmount, resourceNames, rollDicePool, rollSheetTest, validateSheetDetails } from '../sheet-model'
+import { attributeNames, effectiveValue, formGrant, normalizeSheetDetails, parseAmount, resourceNames, rollDicePool, rollSheetTest, validateSheetDetails, supportsSpecialty, skillLabel } from '../sheet-model'
+import { allowedMiraculous, type MiraculousRules } from '../miraculous-model'
+import type { MiraculousDefinition } from '../sheet-model'
 import type { AbilityKind, AttributeName, SheetDetails, SheetForm, SheetRoll } from '../sheet-model'
 import { Modal } from './Modal'
 import '../sheet-page.css'
 
 interface Props {
   sheet: CharacterSheet
+  miraculousRules?: MiraculousRules
+  onFormTheme?: (form: MiraculousDefinition | null) => void
   titleRef: RefObject<HTMLHeadingElement | null>
   onSave: (name: string, details: SheetDetails) => SheetDetails | void | Promise<SheetDetails | void>
   backHref?: string
@@ -31,8 +35,8 @@ function NumberField({ label, value, step, onChange, disabled = false }: { label
     onChange={event => onChange(parseAmount(event.target.value))} />
 }
 
-function readPng(file: File): Promise<string> {
-  if (file.type !== 'image/png' || file.size > 5_000_000) return Promise.reject(new Error('Use um PNG de até 5 MB.'))
+function readPortraitImage(file: File): Promise<string> {
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 5_000_000) return Promise.reject(new Error('Use PNG, JPG ou WebP de até 5 MB.'))
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Não foi possível abrir a imagem.'))
@@ -41,7 +45,7 @@ function readPng(file: File): Promise<string> {
   })
 }
 
-export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, backHref = '#fichas', backLabel = 'Voltar às fichas', headingContext = 'SEUS PERSONAGENS / FICHA', pageTitle = 'Ficha de personagem', masterManaged = false, civilEditable = true, contextNote, persisted = false }: Props) {
+export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, miraculousRules = sheet.miraculousRules, onFormTheme, backHref = '#fichas', backLabel = 'Voltar às fichas', headingContext = 'SEUS PERSONAGENS / FICHA', pageTitle = 'Ficha de personagem', masterManaged = false, civilEditable = true, contextNote, persisted = false }: Props) {
   const [name, setName] = useState(sheet.name)
   const [draft, setDraft] = useState<SheetDetails>(() => normalizeSheetDetails(sheet.details))
   const [activeForm, setActiveForm] = useState<SheetForm>('civil')
@@ -57,7 +61,16 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, back
   const editRevision = useRef(0)
   const savedRevision = useRef(0)
   const iconClicks = useRef({ count: 0, last: 0 })
-  const formName = activeForm === 'civil' ? 'Civil' : availableForms.find(form => form.id === activeForm)?.name ?? 'Transformada'
+  const forms = allowedMiraculous(miraculousRules, sheet.id)
+  const selectedForm = forms.find(form => form.id === activeForm)
+  const formName = selectedForm?.name ?? 'Civil'
+  const formSignature = JSON.stringify(selectedForm ?? null)
+
+  useEffect(() => {
+    if (activeForm !== 'civil' && !selectedForm) { setActiveForm('civil'); setGrantEditorOpen(false) }
+    onFormTheme?.(selectedForm ?? null)
+    return () => onFormTheme?.(null)
+  }, [activeForm, formSignature, onFormTheme])
 
   useEffect(() => {
     if (editRevision.current !== savedRevision.current) return
@@ -107,25 +120,25 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, back
   function bonusForSkill(id: string) { return activeForm === 'civil' ? 0 : formGrant(draft, activeForm, 'skill', id) }
   function setAttributeGrant(attribute: AttributeName, value: number | null) {
     if (activeForm === 'civil' || !masterManaged) return
-    edit(next => { const form = next.forms.find(item => item.id === activeForm)!; if (value === null) delete form.attributes[attribute]; else form.attributes[attribute] = value })
+    edit(next => { let form = next.forms.find(item => item.id === activeForm); if (!form) { form = { id: activeForm, attributes: {}, skills: {} }; next.forms.push(form) }; if (value === null) delete form.attributes[attribute]; else form.attributes[attribute] = value })
   }
   function setSkillGrant(id: string, value: number | null) {
     if (activeForm === 'civil' || !masterManaged) return
-    edit(next => { const form = next.forms.find(item => item.id === activeForm)!; if (value === null) delete form.skills[id]; else form.skills[id] = value })
+    edit(next => { let form = next.forms.find(item => item.id === activeForm); if (!form) { form = { id: activeForm, attributes: {}, skills: {} }; next.forms.push(form) }; if (value === null) delete form.skills[id]; else form.skills[id] = value })
   }
   async function choosePortrait(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (!file) return
-    try { const dataUrl = await readPng(file); edit(next => { next.portraitDataUrl = dataUrl }) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível abrir o PNG.') }
+    try { const dataUrl = await readPortraitImage(file); edit(next => { next.portraitDataUrl = dataUrl }) }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível abrir a imagem.') }
     event.target.value = ''
   }
   async function chooseAppearanceImages(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? [])
     if (!files.length) return
-    if (files.length + draft.appearanceImages.length > 6) { setError('A aparência aceita até seis imagens PNG.'); event.target.value = ''; return }
+    if (files.length + draft.appearanceImages.length > 6) { setError('A aparência aceita até seis imagens.'); event.target.value = ''; return }
     try {
-      const images = await Promise.all(files.map(async file => ({ id: crypto.randomUUID(), name: file.name, dataUrl: await readPng(file) })))
+      const images = await Promise.all(files.map(async file => ({ id: crypto.randomUUID(), name: file.name, dataUrl: await readPortraitImage(file) })))
       edit(next => { next.appearanceImages.push(...images) })
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível abrir as imagens.') }
     event.target.value = ''
@@ -133,7 +146,7 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, back
   async function doRoll(attribute: AttributeName, skillId = '') {
     try {
       const skill = draft.skills.find(item => item.id === skillId)
-      const label = `${attribute}${skill ? ` + ${skill.name}` : ''} · ${formName}`
+      const label = `${attribute}${skill ? ` + ${skillLabel(skill)}` : ''} · ${formName}`
       if (onRecordRoll) {
         const count = effectiveValue(draft.attributes[attribute].civil, bonusForAttribute(attribute))
         if (!count) throw new Error(`Preencha ${attribute} com pelo menos 1 dado para rolar.`)
@@ -191,8 +204,8 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, back
           <section className="sheet-panel" aria-labelledby="sheet-identity-title">
             <div className="sheet-panel-title"><span>01</span><h2 id="sheet-identity-title">Identidade</h2></div>
             <div className="sheet-portrait-row"><button className="sheet-avatar" type="button" onClick={clickIcon} aria-label="Ícone do personagem: clique três vezes para abrir o menu Miraculous" title="Três cliques abrem o menu Miraculous">{draft.portraitDataUrl ? <img src={draft.portraitDataUrl} alt="" /> : '◇'}</button><div><strong>{name || 'Sem nome'}</strong><small>Três cliques no ícone abrem o menu Miraculous.</small><button className="sr-only" type="button" onClick={() => setMiraculousOpen(current => !current)}>Abrir menu Miraculous</button></div></div>
-            {miraculousOpen && <div className="sheet-miraculous-menu" role="group" aria-label="Menu Miraculous"><p>Escolha a forma da ficha</p><div className="sheet-form-list"><button type="button" aria-pressed={activeForm === 'civil'} className={activeForm === 'civil' ? 'active' : ''} onClick={() => setActiveForm('civil')}>Civil</button>{availableForms.map(form => <button key={form.id} type="button" aria-pressed={activeForm === form.id} className={activeForm === form.id ? 'active' : ''} onClick={() => setActiveForm(form.id)}><span>{form.name}</span><small>{form.concept}</small></button>)}</div>{masterManaged && activeForm !== 'civil' && <button className="sheet-manage-form" type="button" onClick={() => setGrantEditorOpen(true)}>Configurar bônus de {formName}</button>}<small>Os bônus são definidos pelo mestre. A aparência do site é escolhida separadamente.</small></div>}
-            {civilEditable && <label className="sheet-field">Retrato PNG<input type="file" accept="image/png" onChange={choosePortrait} /></label>}
+            {miraculousOpen && <div className="sheet-miraculous-menu" role="group" aria-label="Menu Miraculous"><p>Escolha a forma da ficha</p><div className="sheet-form-list"><button type="button" aria-pressed={activeForm === 'civil'} className={activeForm === 'civil' ? 'active' : ''} onClick={() => setActiveForm('civil')}>Civil</button>{forms.map(form => <button key={form.id} type="button" aria-pressed={activeForm === form.id} className={activeForm === form.id ? 'active' : ''} onClick={() => setActiveForm(form.id)}><span>{form.name}</span><small>{form.concept}</small></button>)}</div>{masterManaged && activeForm !== 'civil' && <button className="sheet-manage-form" type="button" onClick={() => setGrantEditorOpen(true)}>Configurar bônus de {formName}</button>}<small>Os bônus e as formas disponíveis são definidos pelo mestre. O tema acompanha a transformação.</small></div>}
+            {civilEditable && <label className="sheet-field">Retrato<input type="file" accept="image/png,image/jpeg,image/webp" onChange={choosePortrait} /></label>}
             {draft.portraitDataUrl && civilEditable && <button className="sheet-remove-text" type="button" onClick={() => edit(next => { delete next.portraitDataUrl; delete next.portraitPath })}>Remover retrato</button>}
             <label className="sheet-field">Nome<input value={name} maxLength={80} disabled={!civilEditable} onChange={event => { editRevision.current += 1; setName(event.target.value); setMessage('') }} /></label>
             <label className="sheet-field">Gênero<input value={draft.gender} maxLength={60} disabled={!civilEditable} onChange={event => edit(next => { next.gender = event.target.value })} /></label>
@@ -227,11 +240,11 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, back
             {draft.skills.map(skill => {
               const total = effectiveValue(skill.civil, bonusForSkill(skill.id))
               return <div className="sheet-value-row" key={skill.id}>
-                <strong>{skill.name}</strong>
+                <div className="sheet-skill-name"><strong>{skillLabel(skill)}</strong>{supportsSpecialty(skill.name) && civilEditable && <label className="sheet-specialty"><span className="sr-only">Especialidade de {skill.name}</span><input value={skill.specialty ?? ''} maxLength={80} placeholder={skill.name === 'Conhecimento' ? 'Ex.: Mecânica' : 'Ex.: Design gráfico'} onChange={event => edit(next => { next.skills.find(item => item.id === skill.id)!.specialty = event.target.value })} /></label>}</div>
                 {activeForm === 'civil' && civilEditable
                   ? <NumberField label={`${skill.name} — bônus`} value={skill.civil} step={5} onChange={value => edit(next => { next.skills.find(item => item.id === skill.id)!.civil = value })} />
                   : <output className="sheet-total" aria-label={`${skill.name} total: ${total ?? 'não definido'}`}>{total === null ? '—' : `+${total}`}</output>}
-                <button className="sheet-roll-button" type="button" aria-label={`Rolar ${skill.name}`} title={`${rollAttribute} + ${skill.name}`} onClick={() => doRoll(rollAttribute, skill.id)}>⚄</button>
+                <button className="sheet-roll-button" type="button" aria-label={`Rolar ${skillLabel(skill)}`} title={`${rollAttribute} + ${skillLabel(skill)}`} onClick={() => doRoll(rollAttribute, skill.id)}>⚄</button>
               </div>
             })}
           </section>
@@ -243,7 +256,7 @@ export function CharacterSheetPage({ sheet, titleRef, onSave, onRecordRoll, back
       </div>
       <div className="sheet-page-lower">
         <section className="sheet-panel" aria-labelledby="sheet-lore-title"><div className="sheet-panel-title"><span>07</span><h2 id="sheet-lore-title">Lore</h2></div><label className="sheet-field">História do personagem<textarea value={draft.lore} maxLength={5000} disabled={!civilEditable} placeholder="Origem, acontecimentos e motivações" onChange={event => edit(next => { next.lore = event.target.value })} /></label></section>
-        <section className="sheet-panel" aria-labelledby="sheet-appearance-title"><div className="sheet-panel-title"><span>08</span><h2 id="sheet-appearance-title">Aparência</h2></div><label className="sheet-field">Descrição visual<textarea value={draft.appearance} maxLength={3000} disabled={!civilEditable} placeholder="Traços, roupas e detalhes visuais" onChange={event => edit(next => { next.appearance = event.target.value })} /></label>{civilEditable && <label className="sheet-field">Adicionar PNGs<input type="file" accept="image/png" multiple onChange={chooseAppearanceImages} /></label>}<div className="sheet-appearance-gallery">{draft.appearanceImages.map(image => <figure key={image.id}><img src={image.dataUrl} alt={image.name} /><figcaption>{image.name}</figcaption>{civilEditable && <button type="button" onClick={() => edit(next => { next.appearanceImages = next.appearanceImages.filter(entry => entry.id !== image.id) })}>Remover</button>}</figure>)}</div></section>
+        <section className="sheet-panel" aria-labelledby="sheet-appearance-title"><div className="sheet-panel-title"><span>08</span><h2 id="sheet-appearance-title">Aparência</h2></div><label className="sheet-field">Descrição visual<textarea value={draft.appearance} maxLength={3000} disabled={!civilEditable} placeholder="Traços, roupas e detalhes visuais" onChange={event => edit(next => { next.appearance = event.target.value })} /></label>{civilEditable && <label className="sheet-field">Adicionar imagens<input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={chooseAppearanceImages} /></label>}<div className="sheet-appearance-gallery">{draft.appearanceImages.map(image => <figure key={image.id}><img src={image.dataUrl} alt={image.name} /><figcaption>{image.name}</figcaption>{civilEditable && <button type="button" onClick={() => edit(next => { next.appearanceImages = next.appearanceImages.filter(entry => entry.id !== image.id) })}>Remover</button>}</figure>)}</div></section>
       </div>
       <p className="sheet-page-disclaimer">{persisted ? 'Salve antes de sair da ficha. Seus dados ficam na sua conta.' : 'Prévia visual: salve antes de sair da ficha. Tudo será descartado ao recarregar ou encerrar a demonstração.'}</p>
     </div>

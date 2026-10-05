@@ -1,5 +1,6 @@
 import type { SheetDetails } from './sheet-model'
 import type { CampaignWorkspace } from './campaign-model'
+import type { MiraculousRules } from './miraculous-model'
 
 export interface Campaign {
   id: string
@@ -10,6 +11,7 @@ export interface Campaign {
 }
 
 export interface CharacterSheet {
+  miraculousRules?: MiraculousRules
   id: string
   name: string
   campaignId: string | null

@@ -2,14 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, RefObject } from 'react'
 import type { Campaign, CharacterSheet } from '../hub-data'
 import { communityContent, normalizeCampaignWorkspace, type CampaignRoll, type CampaignWorkspace } from '../campaign-model'
+import { MiraculousManager } from './MiraculousManager'
+import { MediaGallery } from './MediaGallery'
+import { attachmentIssue, mediaAccept, mediaAttachments, readMediaDataUrl } from '../media-model'
+import type { MediaAttachment } from '../campaign-model'
 import { emptySheetDetails } from '../sheet-model'
 import { CampaignCommunity } from './CampaignCommunity'
 import type { CommunityPostDraft } from './CampaignCommunity'
 import type { CampaignLog } from '../data/game'
 import '../campaign-page.css'
 
-type Area = 'overview' | 'community' | 'members' | 'npcs' | 'media' | 'items' | 'notes' | 'rolls' | 'history' | 'logs'
+type Area = 'miraculous' | 'overview' | 'community' | 'members' | 'npcs' | 'media' | 'items' | 'notes' | 'rolls' | 'history' | 'logs'
 const masterAreas: { id: Area; title: string; hint: string; symbol: string }[] = [
+  { id: 'miraculous', title: 'Miraculous', hint: 'Formas e permissões por personagem', symbol: '◇' },
   { id: 'community', title: 'Comunidade', hint: 'Imagens, anotações e chat', symbol: '◌' },
   { id: 'members', title: 'Jogadores', hint: 'Participantes e presença', symbol: '♧' },
   { id: 'npcs', title: 'NPCs e inimigos', hint: 'Personagens da mesa', symbol: '◇' },
@@ -60,7 +65,8 @@ export function CampaignWorkspacePage({ campaign, sheets, titleRef, viewerName, 
   const [mediaTitle, setMediaTitle] = useState('')
   const [mediaSubtitle, setMediaSubtitle] = useState('')
   const [mediaDescription, setMediaDescription] = useState('')
-  const [mediaImage, setMediaImage] = useState<string | undefined>()
+  const [mediaAttachmentsDraft, setMediaAttachmentsDraft] = useState<MediaAttachment[]>([])
+  const [readingMedia, setReadingMedia] = useState(false)
   const [mediaShared, setMediaShared] = useState(false)
   const [mediaCategoryId, setMediaCategoryId] = useState('')
   const [editingMediaId, setEditingMediaId] = useState<string | null>(null)
@@ -70,8 +76,6 @@ export function CampaignWorkspacePage({ campaign, sheets, titleRef, viewerName, 
   const data = normalizeCampaignWorkspace(campaign.workspace)
   const community = communityContent(data)
   const isMaster = campaign.role === 'master'
-  const mediaPreviewIsVideo = Boolean(mediaImage && (mediaImage.startsWith('data:video/') ||
-    (editingMediaId && !mediaImage.startsWith('data:') && data.media.find(item => item.id === editingMediaId)?.type === 'video')))
   const ownSheets = sheets.filter(sheet => sheet.campaignId === campaign.id && !isMaster)
 
   useEffect(() => {
@@ -111,17 +115,16 @@ export function CampaignWorkspacePage({ campaign, sheets, titleRef, viewerName, 
   function submit(event: FormEvent<HTMLFormElement>, action: () => void | Promise<void>) { event.preventDefault(); void action() }
   function openArea(next: Area) { setArea(next); setNotice(''); setNoticeError(false); scrollRef.current?.scrollTo({ top: 0 }) }
   async function readMediaFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
-    const video = file.type === 'video/mp4' || file.type === 'video/webm'
-    if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'].includes(file.type) || file.size > (video ? 20_000_000 : 5_000_000)) {
-      setNoticeError(true); setNotice('Use PNG, JPG, WebP ou GIF de até 5 MB; vídeos MP4 ou WebM de até 20 MB.'); event.target.value = ''; return
-    }
-    setNoticeError(false)
-    const reader = new FileReader()
-    reader.onload = () => setMediaImage(typeof reader.result === 'string' ? reader.result : undefined)
-    reader.onerror = () => setNotice('Não foi possível abrir essa imagem.')
-    reader.readAsDataURL(file)
+    const files = Array.from(event.target.files ?? [])
+    const input = event.target; input.value = ''
+    const issue = attachmentIssue(files, mediaAttachmentsDraft.length)
+    if (issue) { setNoticeError(true); setNotice(issue); return }
+    setReadingMedia(true)
+    try {
+      const entries = await Promise.all(files.map(async file => ({ id: crypto.randomUUID(), name: file.name, type: file.type.startsWith('video/') ? 'video' as const : file.type === 'image/gif' ? 'gif' as const : 'image' as const, url: await readMediaDataUrl(file) })))
+      setMediaAttachmentsDraft(current => [...current, ...entries]); setNoticeError(false)
+    } catch { setNoticeError(true); setNotice('Não foi possível abrir os arquivos.') }
+    finally { setReadingMedia(false) }
   }
   async function addMember() {
     if (!memberName.trim()) return
@@ -155,14 +158,14 @@ export function CampaignWorkspacePage({ campaign, sheets, titleRef, viewerName, 
     if (saved) { setNoteTitle(''); setNoteBody(''); setNoteShared(false); setNoteCategoryId(''); setEditingNoteId(null) }
   }
   async function addMedia() {
-    if (!mediaTitle.trim()) return
+    if (!mediaTitle.trim() || readingMedia) return
     const saved = await update(next => {
       const previous = editingMediaId ? next.media.find(item => item.id === editingMediaId) : undefined
-      const entry = { id: editingMediaId ?? crypto.randomUUID(), title: mediaTitle.trim(), subtitle: mediaSubtitle.trim(), description: mediaDescription.trim(), imageDataUrl: mediaImage ?? previous?.imageDataUrl, shared: mediaShared, categoryId: mediaCategoryId || null, type: mediaImage?.startsWith('data:video/') ? 'video' as const : mediaImage?.startsWith('data:image/gif') ? 'gif' as const : previous?.type ?? 'image' as const }
+      const entry = { id: editingMediaId ?? crypto.randomUUID(), title: mediaTitle.trim(), subtitle: mediaSubtitle.trim(), description: mediaDescription.trim(), attachments: mediaAttachmentsDraft, imageDataUrl: undefined, mediaUrl: undefined, mediaPath: undefined, shared: mediaShared, categoryId: mediaCategoryId || null, type: mediaAttachmentsDraft[0]?.type ?? previous?.type ?? 'image' as const }
       if (editingMediaId) next.media = next.media.map(item => item.id === editingMediaId ? { ...item, ...entry } : item)
       else next.media.push(entry)
     }, persisted ? 'Mídia salva nesta mesa.' : 'Mídia adicionada nesta prévia.')
-    if (saved) { setMediaTitle(''); setMediaSubtitle(''); setMediaDescription(''); setMediaImage(undefined); setMediaShared(false); setMediaCategoryId(''); setEditingMediaId(null) }
+    if (saved) { setMediaTitle(''); setMediaSubtitle(''); setMediaDescription(''); setMediaAttachmentsDraft([]); setMediaShared(false); setMediaCategoryId(''); setEditingMediaId(null) }
   }
   async function sendMessage(body: string) {
     if (persisted) {
@@ -233,7 +236,7 @@ export function CampaignWorkspacePage({ campaign, sheets, titleRef, viewerName, 
     void update(next => next.rolls.unshift({ id: crypto.randomUUID(), label: values.join(' + '), expression, result }), `Resultado: ${expression} = ${result}. Rolagem demonstrativa.`)
   }
 
-  return <div className="campaign-page">
+  return <div className="campaign-page" data-area={area}>
     <header className="campaign-page-header">
       <div><p className="home-overline">CAMPANHAS / {isMaster ? 'MESTRANDO' : 'JOGANDO'}</p><h1 id="home-title" ref={titleRef} tabIndex={-1}>{campaign.name}</h1><p>{isMaster ? 'Seu espaço para conduzir esta mesa.' : 'Sua visão como jogador nesta mesa.'}</p></div>
       <a className="hub-button campaign-page-back" href="#campanhas" aria-label="Todas as campanhas"><span aria-hidden="true">←</span><span className="campaign-page-back-label">Todas as campanhas</span></a>
@@ -249,11 +252,12 @@ export function CampaignWorkspacePage({ campaign, sheets, titleRef, viewerName, 
           <div className="campaign-section-heading"><p className="home-overline">HUB DA CAMPANHA</p><h2>{isMaster ? 'Mesa do mestre' : 'Sua mesa'}</h2><p>{isMaster ? 'Escolha uma área para configurar o conteúdo em uma página completa.' : 'Encontre sua ficha e o que o mestre compartilhou.'}</p></div>
           {isMaster ? <div className="campaign-shortcuts">{masterAreas.map(item => <button type="button" key={item.id} onClick={() => openArea(item.id)}><span aria-hidden="true">{item.symbol}</span><strong>{item.title}</strong><small>{item.hint}</small><b aria-hidden="true">↗</b></button>)}</div> : <div className="campaign-player-grid">
             <section className="campaign-panel"><p className="home-overline">FICHA VINCULADA</p><h3>Seu personagem</h3>{ownSheets.length ? ownSheets.map(sheet => <div className="campaign-list-row" key={sheet.id}><span>{sheet.name}</span><a href={`#ficha/${encodeURIComponent(sheet.id)}`}>Abrir ficha →</a></div>) : <p>Você ainda não vinculou uma ficha a esta campanha.</p>}<a className="hub-button" href="#fichas">Ir ao hub de fichas</a></section>
-            <section className="campaign-panel"><p className="home-overline">ESPAÇO DA MESA</p><h3>Comunidade</h3><p>{community.media.length} imagem(ns) · {community.notes.length} anotação(ões)</p><p>Veja os conteúdos da campanha e converse no chat da mesa.</p><button className="hub-button" type="button" onClick={() => openArea('community')}>Abrir Comunidade</button></section>
+            <section className="campaign-panel"><p className="home-overline">ESPAÇO DA MESA</p><h3>Comunidade</h3><p>{community.media.length} publicação(ões) de mídia · {community.notes.length} anotação(ões)</p><p>Veja os conteúdos da campanha e converse no chat da mesa.</p><button className="hub-button" type="button" onClick={() => openArea('community')}>Abrir Comunidade</button></section>
           </div>}
           <p className="campaign-page-footnote">{persisted ? 'Campanha salva na sua conta. Convites são gerenciados no hub de campanhas.' : 'Prévia demonstrativa. Os dados desta mesa ficam apenas nesta visita.'}</p>
         </>}
 
+        {area === 'miraculous' && isMaster && <MiraculousManager rules={data.miraculousRules} saving={saving} characters={[...data.members.filter(member => member.sheetId || !persisted).map(member => ({ id: member.sheetId ?? member.id, name: member.characterName || member.name })), ...data.npcs.map(npc => ({ id: npc.id, name: npc.name }))]} onChange={rules => update(next => { next.miraculousRules = rules }, 'Permissões de Miraculous salvas.')} />}
         {area === 'community' && <CampaignCommunity workspace={data} isMaster={isMaster} viewerId={viewerId} onManage={openArea} onSend={sendMessage} onEditMessage={editMessage} onRefresh={onRefresh ? refreshCommunity : undefined} onCreateCategory={isMaster ? createCategory : undefined} onEditCategory={isMaster ? editCategory : undefined} onDeleteCategory={isMaster ? deleteCategory : undefined} onCreatePost={onCreatePost} onEditPost={onEditPost} onHidePost={isMaster ? hidePost : undefined} persisted={persisted} />}
 
         {isMaster && area === 'members' && <section className="campaign-panel"><SectionHeading number="01" title="Jogadores" description={persisted ? 'Participantes que entraram pelo convite da campanha.' : 'Organize participantes e acompanhe a presença na mesa.'} />
@@ -270,16 +274,16 @@ export function CampaignWorkspacePage({ campaign, sheets, titleRef, viewerName, 
           <div className="campaign-list">{data.npcs.length ? data.npcs.map(npc => <div className="campaign-list-row" key={npc.id}><div><strong>{npc.name}</strong><small>Ficha da mesa</small></div><div className="campaign-row-actions"><a href={`#campanha/${encodeURIComponent(campaign.id)}/npc/${encodeURIComponent(npc.id)}`}>Abrir ficha →</a><button type="button" disabled={saving} onClick={() => void update(next => { next.npcs = next.npcs.filter(item => item.id !== npc.id) }, persisted ? 'NPC removido desta mesa.' : 'NPC retirado desta prévia.')}>Retirar</button></div></div>) : <EmptyMessage text="Nenhum NPC ou inimigo criado ainda." />}</div>
         </section>}
 
-        {area === 'media' && <section className="campaign-panel"><SectionHeading number="03" title={isMaster ? 'Hub de mídias' : 'Mídias compartilhadas'} description={isMaster ? 'Envie uma imagem, GIF ou vídeo; escolha a categoria e o que o grupo pode ver.' : 'Conteúdos compartilhados com a mesa.'} />
+        {area === 'media' && <section className="campaign-panel"><SectionHeading number="03" title={isMaster ? 'Hub de mídias' : 'Mídias compartilhadas'} description={isMaster ? 'Envie imagens, GIFs ou vídeos; escolha a categoria e o que o grupo pode ver.' : 'Conteúdos compartilhados com a mesa.'} />
           {isMaster && <form className="campaign-media-form" onSubmit={event => submit(event, addMedia)}>
             <div className="campaign-form-grid"><label>Título<input value={mediaTitle} maxLength={80} required onChange={event => setMediaTitle(event.target.value)} /></label><label>Subtítulo<input value={mediaSubtitle} maxLength={100} onChange={event => setMediaSubtitle(event.target.value)} /></label></div>
             <label>Descrição<textarea value={mediaDescription} maxLength={2000} onChange={event => setMediaDescription(event.target.value)} /></label>
             <label>Categoria<select value={mediaCategoryId} onChange={event => setMediaCategoryId(event.target.value)}><option value="">Geral</option>{data.categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-            <div className="campaign-media-controls"><label>Arquivo <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm" onChange={readMediaFile} /></label><label className="campaign-checkbox"><input type="checkbox" checked={mediaShared} onChange={event => setMediaShared(event.target.checked)} />Visível na Comunidade</label></div>
-            {mediaImage && (mediaPreviewIsVideo ? <video className="campaign-upload-preview" src={mediaImage} controls preload="metadata" /> : <img className="campaign-upload-preview" src={mediaImage} alt="Prévia da imagem selecionada" />)}
-            <p>Imagens e GIFs até 5 MB; vídeos MP4 ou WebM até 20 MB.{persisted ? ' O arquivo será salvo na mesa.' : ' A prévia dura apenas esta visita.'}</p><div className="campaign-form-actions"><button className="hub-button hub-button-primary" type="submit" disabled={saving}>{editingMediaId ? 'Salvar edição' : 'Adicionar mídia'}</button>{editingMediaId && <button type="button" className="hub-button" onClick={() => { setEditingMediaId(null); setMediaTitle(''); setMediaSubtitle(''); setMediaDescription(''); setMediaImage(undefined); setMediaShared(false); setMediaCategoryId('') }}>Cancelar edição</button>}</div>
+            <div className="campaign-media-controls"><label>Adicionar arquivos<input type="file" multiple accept={mediaAccept} disabled={saving || readingMedia} onChange={readMediaFile} /></label><label className="campaign-checkbox"><input type="checkbox" checked={mediaShared} onChange={event => setMediaShared(event.target.checked)} />Visível na Comunidade</label></div>
+            {mediaAttachmentsDraft.length > 0 && <div className="campaign-attachment-list">{mediaAttachmentsDraft.map(file => <div key={file.id}><span>{file.name}</span><button type="button" className="hub-button" onClick={() => setMediaAttachmentsDraft(current => current.filter(entry => entry.id !== file.id))}>Remover</button></div>)}</div>}
+            <p>Até 8 arquivos por publicação. Imagens e GIFs até 5 MB; vídeos MP4 ou WebM até 20 MB.{persisted ? ' Os arquivos serão salvos na mesa.' : ' A prévia dura apenas esta visita.'}</p><div className="campaign-form-actions"><button className="hub-button hub-button-primary" type="submit" disabled={saving || readingMedia}>{readingMedia ? 'Preparando arquivos…' : editingMediaId ? 'Salvar edição' : 'Adicionar mídia'}</button>{editingMediaId && <button type="button" className="hub-button" disabled={saving || readingMedia} onClick={() => { setEditingMediaId(null); setMediaTitle(''); setMediaSubtitle(''); setMediaDescription(''); setMediaAttachmentsDraft([]); setMediaShared(false); setMediaCategoryId('') }}>Cancelar edição</button>}</div>
           </form>}
-          <div className="campaign-media-grid">{(isMaster ? data.media : data.media.filter(item => item.shared)).length ? (isMaster ? data.media : data.media.filter(item => item.shared)).map(item => <article className="campaign-media-card" key={item.id}>{(item.imageDataUrl || item.mediaUrl) ? item.type === 'video' ? <video src={item.imageDataUrl || item.mediaUrl} controls preload="metadata" aria-label={item.title} /> : <img src={item.imageDataUrl || item.mediaUrl} alt={item.title} loading="lazy" /> : <div className="campaign-media-placeholder" aria-hidden="true">◇</div>}<div><small>{isMaster ? item.shared ? 'NA COMUNIDADE' : 'SOMENTE MESTRE' : 'NA COMUNIDADE'}</small><h3>{item.title}</h3>{item.subtitle && <h4>{item.subtitle}</h4>}{item.description && <p>{item.description}</p>}{isMaster && <div className="campaign-row-actions"><button type="button" onClick={() => { setEditingMediaId(item.id); setMediaTitle(item.title); setMediaSubtitle(item.subtitle); setMediaDescription(item.description); setMediaImage(item.imageDataUrl || item.mediaUrl); setMediaShared(item.shared); setMediaCategoryId(item.categoryId ?? ''); scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }}>Editar</button><button type="button" disabled={saving} onClick={() => void update(next => { next.media.find(entry => entry.id === item.id)!.shared = !item.shared }, persisted ? 'Visibilidade salva nesta mesa.' : 'Visibilidade atualizada nesta prévia.')}>{item.shared ? 'Retirar da Comunidade' : 'Mostrar na Comunidade'}</button><button type="button" disabled={saving} onClick={() => void update(next => { next.media = next.media.filter(entry => entry.id !== item.id) }, persisted ? 'Mídia removida da mesa.' : 'Mídia removida da prévia.')}>Remover</button></div>}</div></article>) : <EmptyMessage text={isMaster ? 'Nenhuma mídia adicionada ainda.' : 'O mestre ainda não compartilhou mídias.'} />}</div>
+          <div className="campaign-media-grid">{(isMaster ? data.media : data.media.filter(item => item.shared)).length ? (isMaster ? data.media : data.media.filter(item => item.shared)).map(item => <article className="campaign-media-card" key={item.id}><MediaGallery item={item} /><div><small>{isMaster ? item.shared ? 'NA COMUNIDADE' : 'SOMENTE MESTRE' : 'NA COMUNIDADE'}</small><h3>{item.title}</h3>{item.subtitle && <h4>{item.subtitle}</h4>}{item.description && <p>{item.description}</p>}{isMaster && <div className="campaign-row-actions"><button type="button" onClick={() => { setEditingMediaId(item.id); setMediaTitle(item.title); setMediaSubtitle(item.subtitle); setMediaDescription(item.description); setMediaAttachmentsDraft(mediaAttachments(item)); setMediaShared(item.shared); setMediaCategoryId(item.categoryId ?? ''); scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }}>Editar</button><button type="button" disabled={saving} onClick={() => void update(next => { next.media.find(entry => entry.id === item.id)!.shared = !item.shared }, persisted ? 'Visibilidade salva nesta mesa.' : 'Visibilidade atualizada nesta prévia.')}>{item.shared ? 'Retirar da Comunidade' : 'Mostrar na Comunidade'}</button><button type="button" disabled={saving} onClick={() => void update(next => { next.media = next.media.filter(entry => entry.id !== item.id) }, persisted ? 'Mídia removida da mesa.' : 'Mídia removida da prévia.')}>Remover</button></div>}</div></article>) : <EmptyMessage text={isMaster ? 'Nenhuma mídia adicionada ainda.' : 'O mestre ainda não compartilhou mídias.'} />}</div>
         </section>}
 
         {isMaster && area === 'items' && <section className="campaign-panel"><SectionHeading number="04" title="Itens da mesa" description="Organize equipamentos e objetos da campanha." />

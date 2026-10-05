@@ -8,7 +8,10 @@ Com o Supabase configurado, cadastro e login por nome ou e-mail, senha e Discord
 
 - Cada campanha tem um código de convite único e permanente. O jogador pode vincular uma ficha pessoal à campanha em que participa; o mestre cria NPCs no painel da mesa.
 - O jogador edita seus dados civis. O mestre pode corrigir a ficha vinculada, configurar bônus de transformação e habilidades. Dados civis e bônus da forma são somados nas rolagens.
+- A aba **Miraculous** do mestre permite vetar formas na mesa inteira ou em uma ficha, além de adicionar Miraculous próprios. O veto oculta a transformação e preserva os bônus configurados. Ao transformar, a ficha assume o tema da forma; voltar ao civil restaura a aparência escolhida. Formas sem ilustração própria usam uma paleta discreta.
+- **Conhecimento** e **Ofício** têm especialidade editável, exibida também nas rolagens, sem alterar o bônus da perícia.
 - Retratos e imagens de aparência das fichas, fotos de NPCs e arquivos do mural são guardados em armazenamento privado. O mural aceita textos, imagens, GIFs e vídeos nos formatos indicados na interface.
+- Cada publicação de mídia aceita até **8 arquivos**: PNG, JPG, WebP e GIF até 5 MB por arquivo; MP4 e WebM até 20 MB. Na edição, é possível manter, adicionar ou retirar anexos individualmente.
 - O mestre organiza categorias, itens, notas e mídias; pode revisar publicações e mensagens. A Comunidade mostra o chat com nome e foto atuais dos participantes.
 - Rolagens da campanha ficam no histórico. O mestre tem uma área de registros das ações da mesa. Os avisos de rolagem e confirmação desaparecem automaticamente.
 - Fichas e mesas podem ser excluídas por seus respectivos donos. Excluir uma mesa remove seus dados vinculados.
@@ -20,6 +23,8 @@ Sem a configuração local do Supabase, **Explorar demonstração** abre exemplo
 ## Banco e publicação
 
 O projeto usa as migrações [de autenticação](supabase/migrations/202609170001_rpg_auth.sql), [da base de campanhas](supabase/migrations/202609240001_rpg_campaigns_sheets.sql) e [das melhorias V1](supabase/migrations/202609250001_rpg_v1_fixes.sql), nesta ordem. Cada arquivo novo é aplicado **uma vez**. Consulte [PUBLICAR.md](PUBLICAR.md) para o estado do projeto público e as verificações de implantação.
+
+As novas permissões de formas e galerias exigem também [202610050001_miraculous_and_attachments.sql](supabase/migrations/202610050001_miraculous_and_attachments.sql), após as migrações existentes. Essa atualização é aditiva e já foi aplicada ao projeto Supabase em 05/10/2026; ela não altera contas nem apaga dados.
 
 O site publicado fica em [GitHub Pages](https://zxcw339-cpu.github.io/Site-rpg-miraculous/) e funciona com o computador do criador desligado. O build é feito pelo GitHub Actions; não envie a pasta `dist` manualmente.
 

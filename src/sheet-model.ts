@@ -33,7 +33,8 @@ export const availableForms = [
 export type ResourceName = typeof resourceNames[number]
 export type AttributeName = typeof attributeNames[number]
 export type AbilityKind = 'Passiva' | 'Técnica' | 'Miraculous'
-export type FormId = typeof availableForms[number]['id']
+export type FormId = string
+export interface MiraculousDefinition { id: FormId; name: string; concept: string; themeId?: string }
 export type SheetForm = 'civil' | FormId
 export interface SheetRoll { dice: number[]; bonus: number; total: number }
 type Amount = number | null
@@ -55,7 +56,7 @@ export interface SheetDetails {
   lore: string
   resources: Record<ResourceName, { current: Amount; max: Amount }>
   attributes: Record<AttributeName, { civil: Amount }>
-  skills: { id: string; name: string; civil: Amount }[]
+  skills: { id: string; name: string; civil: Amount; specialty?: string }[]
   forms: FormGrants[]
   inventory: { id: string; name: string; notes: string }[]
   abilities: { id: string; kind: AbilityKind; name: string; description: string }[]
@@ -82,8 +83,11 @@ export function normalizeSheetDetails(input?: Partial<SheetDetails>): SheetDetai
     age: input.age ?? '', height: input.height ?? '',
     appearance: input.appearance ?? '', appearanceImages: input.appearanceImages ?? [], lore: input.lore ?? '',
     attributes: Object.fromEntries(attributeNames.map(name => [name, { civil: input.attributes?.[name]?.civil ?? null }])) as SheetDetails['attributes'],
-    skills: (input.skills ?? empty.skills).map(skill => ({ id: skill.id, name: skill.name, civil: skill.civil ?? null })),
-    forms: availableForms.map(form => input.forms?.find(entry => entry.id === form.id) ?? { id: form.id, attributes: {}, skills: {} }),
+    skills: (input.skills ?? empty.skills).map(skill => ({ id: skill.id, name: skill.name, civil: skill.civil ?? null,
+      ...(supportsSpecialty(skill.name) ? { specialty: typeof skill.specialty === 'string' ? skill.specialty.slice(0, 80) : '' } : {}) })),
+    forms: [...new Set([...availableForms.map(form => form.id), ...(input.forms ?? []).map(form => form.id)])]
+      .filter(id => /^[a-z0-9][a-z0-9-]{0,79}$/.test(id) && id !== 'civil')
+      .map(id => input.forms?.find(entry => entry.id === id) ?? { id, attributes: {}, skills: {} }),
   }
 }
 
@@ -91,6 +95,11 @@ export function parseAmount(value: string): number | null {
   if (value === '') return null
   const parsed = Number(value)
   return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null
+}
+
+export function supportsSpecialty(name: string): boolean { return name === 'Conhecimento' || name === 'Ofício' }
+export function skillLabel(skill: { name: string; specialty?: string }): string {
+  return supportsSpecialty(skill.name) && skill.specialty?.trim() ? `${skill.name} (${skill.specialty.trim()})` : skill.name
 }
 
 export function formGrant(details: SheetDetails, formId: FormId, kind: 'attribute' | 'skill', key: string): number {

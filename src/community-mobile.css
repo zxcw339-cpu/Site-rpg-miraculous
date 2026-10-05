@@ -1,0 +1,40 @@
+@media (max-width:900px) {
+  .campaign-page[data-area='community'] .campaign-page-header { padding:9px 13px; }
+  .campaign-page[data-area='community'] .campaign-page-header .home-overline { display:none; }
+  .campaign-page[data-area='community'] .campaign-page-header h1 { font-size:23px; }
+  .campaign-page[data-area='community'] .campaign-page-nav { padding-block:6px; }
+  .campaign-page[data-area='community'] .campaign-page-nav button { min-height:40px; }
+  .campaign-page[data-area='community'] .campaign-community-scroll { padding:7px 8px 8px; overflow:hidden; }
+  .campaign-community .community-heading { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); }
+  .campaign-community .community-mobile-switch { margin-bottom:7px; padding:3px; gap:4px; }
+  .campaign-community .community-board-topline { padding:9px 12px; align-items:center; }
+  .campaign-community .community-board-topline .community-section-number { display:none; }
+  .campaign-community .community-board-topline h3 { margin:0 0 3px; font-size:21px; }
+  .campaign-community .community-publish { min-height:42px; padding:8px 12px; }
+  .campaign-community .community-board-header { flex-direction:row; flex-wrap:nowrap; padding:6px 9px; gap:7px; }
+  .campaign-community .community-filters { flex:1; min-width:0; width:auto; padding-bottom:2px; scrollbar-width:none; }
+  .campaign-community .community-manage { flex:none; min-height:42px; max-width:86px; padding:5px; font-size:10px; line-height:1.4; border:1px solid var(--hub-border); border-radius:5px; }
+  .campaign-community .community-board-footer { display:none; }
+  .campaign-community .community-board-content { padding:9px; overscroll-behavior-y:contain; -webkit-overflow-scrolling:touch; }
+  .campaign-community .community-category-form { max-height:45dvh; flex:none; overflow-y:auto; }
+  .campaign-community .community-chat-header { padding:8px 11px; }
+  .campaign-community .community-chat-header > span { font-size:22px; }
+  .campaign-community .community-chat-header h3 { font-size:19px; margin:0; }
+  .campaign-community .community-chat-header p { display:none; }
+  .campaign-community .community-chat-log { padding:12px 10px; overscroll-behavior-y:contain; -webkit-overflow-scrolling:touch; }
+  .campaign-community .community-chat-message { gap:8px; }
+  .campaign-community .community-chat-message p { font-size:14px; line-height:1.55; padding:9px 11px; }
+  .campaign-community .community-message-avatar { width:30px; height:30px; flex-basis:30px; }
+  .campaign-community .community-chat-form { flex:none; padding:8px 10px max(8px,env(safe-area-inset-bottom)); }
+  .campaign-community .community-chat-form textarea { min-height:48px; max-height:110px; font-size:16px; }
+  .campaign-community .community-chat-form-footer { margin-top:7px; }
+  .campaign-community .community-chat-form-footer > button { min-height:42px; }
+  .community-layout .media-gallery img { max-height:420px; }
+  .community-layout .media-gallery-multiple img,.community-layout .media-gallery-multiple video { height:150px; }
+  .community-post-modal { width:calc(100vw - 20px); }
+  .community-post-form input,.community-post-form textarea,.community-post-form select { font-size:16px; }
+  .community-attachment-list button { min-height:44px; }
+  .mobile-keyboard-open .campaign-page[data-area='community'] .campaign-page-header,
+  .mobile-keyboard-open .campaign-page[data-area='community'] .campaign-page-nav { display:none; }
+  .mobile-keyboard-open .campaign-community .community-chat-header { display:none; }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Atmosphere } from './components/Atmosphere'
 import { ArrowIcon, BoxIcon, GemIcon, SymbolIcon, UserIcon } from './components/Icons'
@@ -14,14 +14,15 @@ import { CampaignWorkspacePage } from './components/CampaignWorkspacePage'
 import { CampaignOpeningState } from './components/CampaignOpeningState'
 import { exampleCampaigns, exampleSheets, findPlayerCampaign } from './hub-data'
 import { normalizeCampaignWorkspace } from './campaign-model'
-import { defaultTheme, getTheme, themeStorageKey } from './themes/themes'
+import { defaultTheme, getTheme, getFormTheme, themeStorageKey } from './themes/themes'
 import { PasswordRecovery } from './components/PasswordRecovery'
 import { authConfigured, discordEnabled, supabase } from './auth/client'
 import { useAccount } from './auth/useAccount'
 import { register, requestPasswordReset, saveProfile, setAccountPassword, signIn, signInDiscord, updatePassword } from './auth/service'
-import { createCampaign, createCommunityPost, createSheet, deleteCampaign, deleteSheet, editCampaignMessage, editCommunityPost, getInviteCode, joinCampaign, linkSheet, loadCampaignLogs, loadCampaignMessages, loadCampaignWorkspace, loadGameData, loadSheet, recordCampaignRoll, saveCampaignWorkspace, saveMasterSheetData, saveSheet, saveSheetAsMaster, sendCampaignMessage, subscribeCampaign } from './data/game'
+import { createCampaign, createCommunityPost, createSheet, deleteCampaign, deleteSheet, editCampaignMessage, editCommunityPost, getInviteCode, joinCampaign, linkSheet, loadCampaignLogs, loadCampaignMessages, loadCampaignWorkspace, loadGameData, loadSheet, loadMiraculousRules, recordCampaignRoll, saveCampaignWorkspace, saveMasterSheetData, saveSheet, saveSheetAsMaster, sendCampaignMessage, subscribeCampaign } from './data/game'
 import type { CampaignLog } from './data/game'
 import type { CampaignRoll } from './campaign-model'
+import type { MiraculousDefinition } from './sheet-model'
 
 function readPreference() {
   try { return getTheme(localStorage.getItem(themeStorageKey)) }
@@ -52,7 +53,9 @@ export default function App() {
   const account = useAccount()
   const [demoMode, setDemoMode] = useState(false)
   const [exitPending, setExitPending] = useState(false)
-  const [theme, setTheme] = useState(readPreference)
+  const [preferredTheme, setTheme] = useState(readPreference)
+  const [transformedForm, setTransformedForm] = useState<MiraculousDefinition | null>(null)
+  const theme = useMemo(() => transformedForm ? getFormTheme(transformedForm) : preferredTheme, [transformedForm, preferredTheme])
   const [storageUnavailable, setStorageUnavailable] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const [screen, setScreen] = useState(currentScreen)
@@ -190,6 +193,29 @@ export default function App() {
     })
     return () => { window.clearTimeout(timer); unsubscribe() }
   }, [persisted, gameLoadedUserId, account.session?.user.id, screen, routeHash])
+
+  const openSheet = screen === 'sheet-detail' ? sheets.find(sheet => sheet.id === decodeURIComponent(routeHash.slice('#ficha/'.length))) : undefined
+  const openSheetCampaignId = openSheet?.campaignId
+  const openSheetId = openSheet?.id
+  useEffect(() => {
+    if (!persisted || !openSheetCampaignId || !openSheetId) return
+    let active = true
+    let busy = false
+    const refreshRules = async () => {
+      if (!active || busy || document.visibilityState !== 'visible') return
+      busy = true
+      try {
+        const rules = await loadMiraculousRules(openSheetCampaignId)
+        if (active) setSheets(current => current.map(sheet => sheet.id !== openSheetId || JSON.stringify(sheet.miraculousRules) === JSON.stringify(rules) ? sheet : { ...sheet, miraculousRules: rules }))
+      } catch { /* Mantém a última regra recebida até a conexão voltar. */ }
+      finally { busy = false }
+    }
+    const unsubscribe = subscribeCampaign(openSheetCampaignId, table => { if (table === 'rpg_campaign_miraculous') void refreshRules() })
+    const interval = window.setInterval(() => { void refreshRules() }, 15_000)
+    const onVisible = () => { if (document.visibilityState === 'visible') void refreshRules() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { active = false; unsubscribe(); window.clearInterval(interval); document.removeEventListener('visibilitychange', onVisible) }
+  }, [persisted, openSheetCampaignId, openSheetId])
 
   useEffect(() => {
     if (!persisted || screen !== 'campaign-detail' || gameLoadedUserId !== account.session?.user.id) return
@@ -381,7 +407,7 @@ export default function App() {
           const sheet = sheets.find(item => item.id === decodeURIComponent(routeHash.slice('#ficha/'.length)))
           if (sheet && persisted && sheetError) return <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Não foi possível abrir a ficha</h1><p role="alert">{sheetError}</p><button className="hub-button" type="button" onClick={() => setSheetRevision(current => current + 1)}>Tentar novamente</button><a className="hub-button" href="#fichas">Voltar às fichas</a></div>
           if (sheet && persisted && sheetLoadedId !== sheet.id) return <div className="hub-page hub-missing" aria-live="polite"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Abrindo ficha…</h1><p>Preparando sua ficha e imagens.</p></div>
-          return sheet ? <CharacterSheetPage key={sheet.id} sheet={sheet} persisted={persisted} titleRef={titleRef} onRecordRoll={persisted && sheet.campaignId ? (label, count, sides, bonus, mode) => recordRoll(sheet.campaignId!, label, count, sides, bonus, mode) : undefined} onSave={async (name, details) => {
+          return sheet ? <CharacterSheetPage key={sheet.id} onFormTheme={setTransformedForm} sheet={sheet} miraculousRules={persisted ? sheet.miraculousRules : campaigns.find(campaign => campaign.id === sheet.campaignId)?.workspace?.miraculousRules} persisted={persisted} titleRef={titleRef} onRecordRoll={persisted && sheet.campaignId ? (label, count, sides, bonus, mode) => recordRoll(sheet.campaignId!, label, count, sides, bonus, mode) : undefined} onSave={async (name, details) => {
             const updated = persisted ? await saveSheet(sheet.id, name, details) : { ...sheet, name, details }
             setSheets(current => current.map(item => item.id === sheet.id ? updated : item))
             return updated.details
@@ -395,7 +421,7 @@ export default function App() {
           if (persisted && !campaign.workspace) return <CampaignOpeningState key={`${campaign.id}-${workspaceRevision}`} name={campaign.name} isMaster={campaign.role === 'master'} titleRef={titleRef} onRetry={() => setWorkspaceRevision(current => current + 1)} />
           if (type === 'npc' && campaign.role === 'master') {
             const npc = campaign.workspace?.npcs.find(item => item.id === decodeURIComponent(encodedNpcId || ''))
-            if (npc) return <CharacterSheetPage key={npc.id} sheet={{ id: npc.id, name: npc.name, campaignId: null, isExample: false, details: npc.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / NPCS E INIMIGOS" pageTitle="Ficha da mesa" masterManaged persisted={persisted} titleRef={titleRef} onRecordRoll={persisted ? (label, count, sides, bonus, mode) => recordRoll(campaign.id, label, count, sides, bonus, mode) : undefined} onSave={async (name, details) => {
+            if (npc) return <CharacterSheetPage key={npc.id} miraculousRules={campaign.workspace?.miraculousRules} onFormTheme={setTransformedForm} sheet={{ id: npc.id, name: npc.name, campaignId: null, isExample: false, details: npc.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / NPCS E INIMIGOS" pageTitle="Ficha da mesa" masterManaged persisted={persisted} titleRef={titleRef} onRecordRoll={persisted ? (label, count, sides, bonus, mode) => recordRoll(campaign.id, label, count, sides, bonus, mode) : undefined} onSave={async (name, details) => {
               const before = normalizeCampaignWorkspace(campaign.workspace)
               const next = structuredClone(before)
               next.npcs = next.npcs.map(entry => entry.id === npc.id ? { ...entry, name, details } : entry)
@@ -406,7 +432,7 @@ export default function App() {
           if (type === 'jogador' && campaign.role === 'master') {
             const member = campaign.workspace?.members.find(item => item.id === decodeURIComponent(encodedNpcId || ''))
             if (member && persisted && !member.sheetId) return <div className="hub-page hub-missing"><h1 id="home-title" ref={titleRef} tabIndex={-1}>Ficha ainda não vinculada</h1><p>Peça ao jogador que vincule uma ficha a esta campanha no hub de fichas.</p><a className="hub-button" href={`#campanha/${encodeURIComponent(campaign.id)}`}>Voltar à mesa</a></div>
-            if (member) return <CharacterSheetPage key={member.sheetId ?? member.id} sheet={{ id: member.sheetId ?? member.id, name: member.characterName || `Ficha de ${member.name}`, campaignId: campaign.id, isExample: false, details: member.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / JOGADORES" pageTitle="Ficha do participante" masterManaged civilEditable persisted={persisted} contextNote={persisted ? 'Como mestre, você pode revisar a ficha completa, conceder bônus de formas e editar habilidades.' : 'Prévia: configure a ficha do participante e os bônus.'} titleRef={titleRef} onRecordRoll={persisted ? (label, count, sides, bonus, mode) => recordRoll(campaign.id, label, count, sides, bonus, mode) : undefined} onSave={async (name, details) => {
+            if (member) return <CharacterSheetPage key={member.sheetId ?? member.id} miraculousRules={campaign.workspace?.miraculousRules} onFormTheme={setTransformedForm} sheet={{ id: member.sheetId ?? member.id, name: member.characterName || `Ficha de ${member.name}`, campaignId: campaign.id, isExample: false, details: member.details }} backHref={`#campanha/${encodeURIComponent(campaign.id)}`} backLabel="Voltar à mesa" headingContext="CAMPANHA / JOGADORES" pageTitle="Ficha do participante" masterManaged civilEditable persisted={persisted} contextNote={persisted ? 'Como mestre, você pode revisar a ficha completa, conceder bônus de formas e editar habilidades.' : 'Prévia: configure a ficha do participante e os bônus.'} titleRef={titleRef} onRecordRoll={persisted ? (label, count, sides, bonus, mode) => recordRoll(campaign.id, label, count, sides, bonus, mode) : undefined} onSave={async (name, details) => {
               let canonical = details
               if (persisted) {
                 try {
@@ -436,12 +462,12 @@ export default function App() {
               setCampaigns(current => current.map(item => item.id !== campaign.id || !item.workspace ? item : { ...item, workspace: { ...item.workspace, messages: item.workspace.messages.map(message => message.id === id ? { ...edited, avatarUrl: edited.avatarUrl || message.avatarUrl } : message) } }))
             } : undefined}
             onCreatePost={persisted ? async draft => {
-              const post = await createCommunityPost(campaign.id, { ...draft, file: draft.file ?? undefined })
+              const post = await createCommunityPost(campaign.id, { ...draft, files: draft.files ?? [] })
               setCampaigns(current => current.map(item => item.id !== campaign.id || !item.workspace ? item : { ...item, workspace: { ...item.workspace, media: draft.kind === 'media' ? [...item.workspace.media, post as typeof item.workspace.media[number]] : item.workspace.media, notes: draft.kind === 'note' ? [...item.workspace.notes, post as typeof item.workspace.notes[number]] : item.workspace.notes } }))
               setWorkspaceRevision(current => current + 1)
             } : undefined}
             onEditPost={persisted ? async (kind, id, draft) => {
-              const post = await editCommunityPost(campaign.id, kind, id, { title: draft.title, body: draft.body, categoryId: draft.categoryId, file: draft.file ?? undefined })
+              const post = await editCommunityPost(campaign.id, kind, id, { title: draft.title, body: draft.body, categoryId: draft.categoryId, files: draft.files ?? [], retainedAttachmentIds: draft.retainedAttachmentIds })
               setCampaigns(current => current.map(item => item.id !== campaign.id || !item.workspace ? item : { ...item, workspace: { ...item.workspace, media: kind === 'media' ? item.workspace.media.map(entry => entry.id === id ? post as typeof entry : entry) : item.workspace.media, notes: kind === 'note' ? item.workspace.notes.map(entry => entry.id === id ? post as typeof entry : entry) : item.workspace.notes } }))
               setWorkspaceRevision(current => current + 1)
             } : undefined}
@@ -534,7 +560,7 @@ export default function App() {
     </footer>
     {account.error && !waitingForAccount && <div className="account-error" role="alert">{account.error}<button onClick={() => account.setError('')} aria-label="Fechar aviso">×</button></div>}
 
-    <ThemePicker open={themePickerOpen} onClose={() => setThemePickerOpen(false)} theme={theme} onSelect={selectTheme} storageUnavailable={storageUnavailable} />
+    <ThemePicker open={themePickerOpen} onClose={() => setThemePickerOpen(false)} theme={preferredTheme} onSelect={selectTheme} storageUnavailable={storageUnavailable} />
   </div>
 }
 

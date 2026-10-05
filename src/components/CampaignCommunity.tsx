@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { communityContent, type CampaignMedia, type CampaignWorkspace } from '../campaign-model'
+import { attachmentIssue, mediaAccept, mediaAttachments } from '../media-model'
+import type { MediaAttachment } from '../campaign-model'
+import { MediaGallery } from './MediaGallery'
 import { Modal } from './Modal'
 import '../community.css'
+import '../community-mobile.css'
 
 type Category = { id: string; name: string; description?: string; sortOrder?: number }
 type Media = CampaignMedia & { categoryId?: string | null; type?: 'image' | 'gif' | 'video' | 'text'; mediaUrl?: string; authorId?: string }
 type Note = CampaignWorkspace['notes'][number] & { categoryId?: string | null; authorId?: string }
 type Message = CampaignWorkspace['messages'][number] & { authorId?: string; avatarUrl?: string; editedAt?: string }
 
-export type CommunityPostDraft = { kind: 'media' | 'note'; title: string; body: string; categoryId?: string | null; file?: File | null }
-type PostEditor = CommunityPostDraft & { mode: 'create' | 'edit'; id?: string }
+export type CommunityPostDraft = { kind: 'media' | 'note'; title: string; body: string; categoryId?: string | null; files?: File[]; retainedAttachmentIds?: string[] }
+type PostEditor = CommunityPostDraft & { mode: 'create' | 'edit'; id?: string; retainedAttachments?: MediaAttachment[] }
 
 interface Props {
   workspace: CampaignWorkspace
@@ -154,18 +158,18 @@ export function CampaignCommunity({ workspace, isMaster, viewerId, onManage, onS
 
   function beginEdit(kind: 'media' | 'note', item: Media | Note) {
     setPostError('')
-    setPostEditor({ mode: 'edit', kind, id: item.id, title: item.title, body: kind === 'media' ? (item as Media).description : (item as Note).body, categoryId: item.categoryId ?? null, file: null })
+    setPostEditor({ mode: 'edit', kind, id: item.id, title: item.title, body: kind === 'media' ? (item as Media).description : (item as Note).body, categoryId: item.categoryId ?? null, files: [], retainedAttachments: kind === 'media' ? mediaAttachments(item as Media) : [] })
   }
 
   async function savePost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!postEditor || postSaving) return
-    const draft: CommunityPostDraft = { kind: postEditor.kind, title: postEditor.title.trim(), body: postEditor.body.trim(), categoryId: postEditor.categoryId ?? null, file: postEditor.file ?? null }
+    const draft: CommunityPostDraft = { kind: postEditor.kind, title: postEditor.title.trim(), body: postEditor.body.trim(), categoryId: postEditor.categoryId ?? null, files: postEditor.files ?? [], retainedAttachmentIds: postEditor.retainedAttachments?.map(file => file.id) }
     if (!draft.title) { setPostError('Dê um título à publicação.'); return }
-    if (draft.kind === 'media' && postEditor.mode === 'create' && !draft.file) { setPostError('Escolha uma imagem, GIF ou vídeo.'); return }
-    if (draft.file && (!['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'].includes(draft.file.type) || draft.file.size > (draft.file.type.startsWith('video/') ? 20_000_000 : 5_000_000))) {
-      setPostError('Use PNG, JPG, WebP ou GIF até 5 MB; MP4 ou WebM até 20 MB.'); return
-    }
+    const retainedCount = postEditor.retainedAttachments?.length ?? 0
+    if (draft.kind === 'media' && !draft.files!.length && !retainedCount) { setPostError('Escolha ao menos uma imagem, GIF ou vídeo.'); return }
+    const issue = attachmentIssue(draft.files!, retainedCount)
+    if (issue) { setPostError(issue); return }
     setPostSaving(true)
     setPostError('')
     try {
@@ -202,7 +206,7 @@ export function CampaignCommunity({ workspace, isMaster, viewerId, onManage, onS
     </div>
     <div className={`community-layout community-mobile-${mobilePane}`}>
       <section className="community-board" aria-label="Mural da campanha">
-        <div className="community-board-topline"><div><span className="community-section-number">01 / MURAL</span><h3>Arquivo compartilhado</h3><span className="community-count">{media.length + notes.length} {media.length + notes.length === 1 ? 'publicação' : 'publicações'}</span></div>{onCreatePost && <button type="button" className="community-publish" onClick={() => { setPostError(''); setPostEditor({ mode: 'create', kind: 'note', title: '', body: '', categoryId: null, file: null }) }}>+ Publicar</button>}</div>
+        <div className="community-board-topline"><div><span className="community-section-number">01 / MURAL</span><h3>Arquivo compartilhado</h3><span className="community-count">{media.length + notes.length} {media.length + notes.length === 1 ? 'publicação' : 'publicações'}</span></div>{onCreatePost && <button type="button" className="community-publish" onClick={() => { setPostError(''); setPostEditor({ mode: 'create', kind: 'note', title: '', body: '', categoryId: null, files: [] }) }}>+ Publicar</button>}</div>
         <div className="community-board-header">
           <div className="community-filters" role="group" aria-label="Filtrar publicações">
             <button type="button" aria-pressed={view === 'all'} onClick={() => setView('all')}>Tudo <span>{media.length + notes.length}</span></button>
@@ -226,7 +230,7 @@ export function CampaignCommunity({ workspace, isMaster, viewerId, onManage, onS
           {filteredMedia.length + filteredNotes.length ? <div className="community-feed">
             {filteredMedia.map(item => <article className={`community-post community-post-${item.type ?? 'image'}`} key={`media-${item.id}`}>
               <div className="community-post-kicker"><span>{mediaKind(item)}</span>{item.categoryId && <span>{categories.find(category => category.id === item.categoryId)?.name}</span>}</div>
-              <CommunityMediaPreview item={item} onOpen={() => setImage(item)} />
+              <MediaGallery item={item} onZoom={file => setImage({ ...item, imageDataUrl: file.url, mediaUrl: file.url, title: file.name || item.title })} />
               <div className="community-post-copy"><h4>{item.title}</h4>{item.subtitle && <p className="community-post-subtitle">{item.subtitle}</p>}{item.description && <p>{item.description}</p>}<div className="community-post-actions">{onEditPost && (isMaster || Boolean(viewerId && item.authorId === viewerId)) && <button type="button" onClick={() => beginEdit('media', item)}>Editar</button>}{isMaster && onHidePost && <button type="button" disabled={moderatingId === item.id} onClick={() => void hidePost('media', item.id)}>{moderatingId === item.id ? 'Retirando…' : 'Retirar do mural'}</button>}</div></div>
             </article>)}
             {filteredNotes.map(note => <article className="community-post community-post-note" key={`note-${note.id}`}><div className="community-post-kicker"><span>Texto</span>{note.categoryId && <span>{categories.find(category => category.id === note.categoryId)?.name}</span>}</div><div className="community-note-mark" aria-hidden="true">≡</div><div className="community-post-copy"><h4>{note.title}</h4>{note.body && <p>{note.body}</p>}<div className="community-post-actions">{onEditPost && (isMaster || Boolean(viewerId && note.authorId === viewerId)) && <button type="button" onClick={() => beginEdit('note', note)}>Editar</button>}{isMaster && onHidePost && <button type="button" disabled={moderatingId === note.id} onClick={() => void hidePost('note', note.id)}>{moderatingId === note.id ? 'Retirando…' : 'Retirar do mural'}</button>}</div></div></article>)}
@@ -266,27 +270,30 @@ export function CampaignCommunity({ workspace, isMaster, viewerId, onManage, onS
     {postEditor && <Modal open onClose={() => { if (!postSaving) setPostEditor(null) }} titleId="community-post-title" className="community-post-modal">
       <div className="community-post-modal-heading"><span className="community-section-number">MURAL DA MESA</span><h2 id="community-post-title">{postEditor.mode === 'edit' ? 'Editar publicação' : 'Nova publicação'}</h2><p>O grupo verá este conteúdo na Comunidade.</p></div>
       <form className="community-post-form" onSubmit={savePost}>
-        {postEditor.mode === 'create' && <fieldset><legend>Formato</legend><div className="community-post-kind"><button type="button" aria-pressed={postEditor.kind === 'note'} onClick={() => setPostEditor({ ...postEditor, kind: 'note', file: null })}>Texto</button><button type="button" aria-pressed={postEditor.kind === 'media'} onClick={() => setPostEditor({ ...postEditor, kind: 'media' })}>Imagem, GIF ou vídeo</button></div></fieldset>}
+        {postEditor.mode === 'create' && <fieldset><legend>Formato</legend><div className="community-post-kind"><button type="button" aria-pressed={postEditor.kind === 'note'} onClick={() => setPostEditor({ ...postEditor, kind: 'note', files: [] })}>Texto</button><button type="button" aria-pressed={postEditor.kind === 'media'} onClick={() => setPostEditor({ ...postEditor, kind: 'media' })}>Imagem, GIF ou vídeo</button></div></fieldset>}
         <label htmlFor="community-post-title-input">Título</label><input id="community-post-title-input" value={postEditor.title} maxLength={120} onChange={event => setPostEditor({ ...postEditor, title: event.target.value })} required />
         <label htmlFor="community-post-body">Texto ou descrição</label><textarea id="community-post-body" value={postEditor.body} maxLength={5000} rows={5} onChange={event => setPostEditor({ ...postEditor, body: event.target.value })} />
         {categories.length > 0 && <><label htmlFor="community-post-category">Categoria</label><select id="community-post-category" value={postEditor.categoryId ?? ''} onChange={event => setPostEditor({ ...postEditor, categoryId: event.target.value || null })}><option value="">Sem categoria</option>{categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select></>}
-        {postEditor.kind === 'media' && <><label htmlFor="community-post-file">{postEditor.mode === 'edit' ? 'Substituir arquivo (opcional)' : 'Arquivo'}</label><input id="community-post-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm" onChange={event => setPostEditor({ ...postEditor, file: event.target.files?.[0] ?? null })} />{postEditor.file && <small>{postEditor.file.name}</small>}</>}
+        {postEditor.kind === 'media' && <>
+          <label htmlFor="community-post-file">Adicionar imagens, GIFs ou vídeos</label><input id="community-post-file" type="file" multiple accept={mediaAccept} disabled={postSaving} onChange={event => {
+            const files = Array.from(event.target.files ?? [])
+            event.target.value = ''
+            const issue = attachmentIssue(files, (postEditor.files?.length ?? 0) + (postEditor.retainedAttachments?.length ?? 0))
+            if (issue) { setPostError(issue); return }
+            setPostError(''); setPostEditor(current => current ? { ...current, files: [...current.files ?? [], ...files] } : current)
+          }} />
+          <small>Até 8 arquivos por publicação. PNG, JPG, WebP e GIF até 5 MB; MP4 e WebM até 20 MB cada.</small>
+          <ul className="community-attachment-list">{postEditor.retainedAttachments?.map(file => <li key={file.id}><span>{file.name}</span><button type="button" disabled={postSaving} onClick={() => setPostEditor({ ...postEditor, retainedAttachments: postEditor.retainedAttachments?.filter(entry => entry.id !== file.id) })}>Remover</button></li>)}{postEditor.files?.map((file, index) => <li key={index}><span>{file.name}</span><button type="button" disabled={postSaving} onClick={() => setPostEditor({ ...postEditor, files: postEditor.files?.filter((_, entryIndex) => entryIndex !== index) })}>Remover</button></li>)}</ul>
+        </>}
         {postError && <p className="field-error" role="alert">{postError}</p>}
-        <div className="community-post-form-actions"><button type="button" onClick={() => setPostEditor(null)} disabled={postSaving}>Cancelar</button><button type="submit" disabled={postSaving || !postEditor.title.trim() || (postEditor.mode === 'create' && postEditor.kind === 'media' && !postEditor.file)}>{postSaving ? 'Salvando…' : postEditor.mode === 'edit' ? 'Salvar publicação' : 'Publicar'}</button></div>
+        <div className="community-post-form-actions"><button type="button" onClick={() => setPostEditor(null)} disabled={postSaving}>Cancelar</button><button type="submit" disabled={postSaving || !postEditor.title.trim() || (postEditor.mode === 'create' && postEditor.kind === 'media' && !postEditor.files?.length)}>{postSaving ? 'Salvando…' : postEditor.mode === 'edit' ? 'Salvar publicação' : 'Publicar'}</button></div>
       </form>
     </Modal>}
   </section>
 }
 
-function CommunityMediaPreview({ item, onOpen }: { item: Media; onOpen: () => void }) {
-  const source = item.imageDataUrl || item.mediaUrl
-  if (item.type === 'video' && source) return <video className="community-post-video" controls preload="metadata" src={source} aria-label={item.title} />
-  if (source) return <button className="community-image-open" type="button" aria-label={`Abrir imagem: ${item.title}`} onClick={onOpen}><img src={source} alt={item.title} loading="lazy" /><span aria-hidden="true">Ampliar ↗</span></button>
-  if (item.type === 'text') return null
-  return <div className="community-image-placeholder" aria-hidden="true">◇</div>
-}
-
 function mediaKind(item: Media): string {
+  if (mediaAttachments(item).length > 1) return `Galeria · ${mediaAttachments(item).length} arquivos`
   if (item.type === 'video') return 'Vídeo'
   if (item.type === 'gif') return 'GIF'
   if (item.type === 'text') return 'Publicação'

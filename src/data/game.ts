@@ -5,11 +5,15 @@ import type { Campaign, CharacterSheet } from '../hub-data'
 import { emptySheetDetails, normalizeSheetDetails, validateSheetDetails } from '../sheet-model'
 import type { FormGrants, SheetDetails } from '../sheet-model'
 import { normalizeInviteCode } from '../invite-code'
+import { emptyMiraculousRules, normalizeMiraculousRules, type MiraculousRules } from '../miraculous-model'
+import { attachmentIssue, mediaAttachments } from '../media-model'
+import type { MediaAttachment } from '../campaign-model'
 
 type Row = Record<string, unknown>
 
 const campaignColumns = 'id,name,owner_id'
 const sheetColumns = 'id,owner_id,campaign_id,name,details'
+const mediaColumns = 'id,title,subtitle,description,image_path,media_url,media_type,category_id,author_id,shared,attachments'
 
 function object(value: unknown): Row {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Row : {}
@@ -223,8 +227,9 @@ export async function loadSheet(sheetId: string): Promise<CharacterSheet> {
   await userId()
   const { data, error } = await requireSupabase().from('rpg_sheets').select(sheetColumns).eq('id', sheetId).single()
   if (error || !data) throw problem(error, 'Ficha não encontrada ou sem acesso.')
-  const overlays = await loadOverlays([sheetId])
-  return hydrateSheet(sheetFromRow(object(data), overlays.get(sheetId)))
+  const row = object(data)
+  const [overlays, rules] = await Promise.all([loadOverlays([sheetId]), string(row.campaign_id) ? loadMiraculousRules(string(row.campaign_id)) : Promise.resolve(emptyMiraculousRules())])
+  return hydrateSheet({ ...sheetFromRow(row, overlays.get(sheetId)), miraculousRules: rules })
 }
 
 export async function createCampaign(name: string): Promise<Campaign> {
@@ -298,7 +303,8 @@ export async function saveSheet(sheetId: string, name: string, details: SheetDet
   const removed = oldPaths.filter(path => !newPaths.has(path))
   if (removed.length) await requireSupabase().storage.from(sheetBucket).remove(removed)
   const overlays = await loadOverlays([sheetId])
-  return hydrateSheet(sheetFromRow(saved, overlays.get(sheetId)))
+  const rules = string(saved.campaign_id) ? await loadMiraculousRules(string(saved.campaign_id)) : emptyMiraculousRules()
+  return hydrateSheet({ ...sheetFromRow(saved, overlays.get(sheetId)), miraculousRules: rules })
 }
 
 export async function saveSheetAsMaster(sheetId: string, name: string, details: SheetDetails): Promise<CharacterSheet> {
@@ -323,8 +329,15 @@ export async function saveMasterSheetData(sheetId: string, forms: FormGrants[], 
   if (error) throw problem(error, 'Não foi possível salvar os bônus e habilidades desta ficha.')
 }
 
+export async function loadMiraculousRules(campaignId: string): Promise<MiraculousRules> {
+  const { data, error } = await requireSupabase().from('rpg_campaign_miraculous').select('rules').eq('campaign_id', campaignId).maybeSingle()
+  if (error) throw problem(error, 'Não foi possível carregar as regras de Miraculous da mesa.')
+  return normalizeMiraculousRules(object(object(data).rules))
+}
+
 function mediaFromRow(row: Row): CampaignMedia {
   return { id: string(row.id), title: string(row.title), subtitle: string(row.subtitle), description: string(row.description),
+    attachments: Array.isArray(row.attachments) && row.attachments.length ? row.attachments as MediaAttachment[] : undefined,
     categoryId: string(row.category_id) || null, authorId: string(row.author_id), mediaPath: string(row.image_path) || undefined,
     type: (string(row.media_type) || 'image') as CampaignMedia['type'], mediaUrl: string(row.media_url) || undefined, shared: row.shared === true }
 }
@@ -339,10 +352,12 @@ function categoryFromRow(row: Row): CampaignCategory {
 }
 
 async function hydrateMedia(media: CampaignMedia[]): Promise<CampaignMedia[]> {
-  const signed = await signedUrls(mediaBucket, media.map(item => item.mediaPath).filter((path): path is string => Boolean(path)))
+  const paths = media.flatMap(item => mediaAttachments(item).map(file => file.path).filter((path): path is string => Boolean(path)))
+  const signed = await signedUrls(mediaBucket, paths)
   return media.map(item => {
-    const url = item.mediaPath ? signed.get(item.mediaPath) || undefined : item.mediaUrl
-    return { ...item, mediaUrl: url, imageDataUrl: item.type === 'video' ? undefined : url }
+    const attachments = mediaAttachments(item).map(file => ({ ...file, url: file.path ? signed.get(file.path) : file.url }))
+    const first = attachments[0]
+    return { ...item, attachments, mediaUrl: first?.url, imageDataUrl: first?.type === 'video' ? undefined : first?.url }
   })
 }
 
@@ -385,15 +400,16 @@ export async function loadCampaignWorkspace(campaignId: string): Promise<Campaig
   campaignOwnerCache.set(campaignId, string(campaign.owner_id))
   const isMaster = campaign.owner_id === currentUserId
   const [masterResult, mediaResult, notesResult, categoryResult, messages, rollResult,
-    participantsResult, memberSheetsResult] = await Promise.all([
+    participantsResult, memberSheetsResult, miraculousRules] = await Promise.all([
     isMaster ? client.from('rpg_campaign_master_data').select('data').eq('campaign_id', campaignId).maybeSingle() : Promise.resolve({ data: null, error: null }),
-    client.from('rpg_campaign_media').select('id,title,subtitle,description,image_path,media_url,media_type,category_id,author_id,shared').eq('campaign_id', campaignId).order('created_at'),
+    client.from('rpg_campaign_media').select(mediaColumns).eq('campaign_id', campaignId).order('created_at'),
     client.from('rpg_campaign_notes').select('id,title,body,category_id,author_id,shared').eq('campaign_id', campaignId).order('created_at'),
     client.from('rpg_campaign_categories').select('id,name,description,sort_order').eq('campaign_id', campaignId).order('sort_order'),
     messageRows(campaignId, string(campaign.owner_id)),
     client.from('rpg_campaign_rolls').select('id,label,expression,dice,result,author_id,created_at').eq('campaign_id', campaignId).order('created_at', { ascending: false }).limit(200),
     isMaster ? client.rpc('rpg_campaign_participants', { p_campaign_id: campaignId }) : Promise.resolve({ data: [], error: null }),
     isMaster ? client.from('rpg_sheets').select(sheetColumns).eq('campaign_id', campaignId) : Promise.resolve({ data: [], error: null }),
+    loadMiraculousRules(campaignId),
   ])
   if (masterResult.error) throw problem(masterResult.error, 'Não foi possível carregar o painel do mestre.')
   if (mediaResult.error) throw problem(mediaResult.error, 'Não foi possível carregar as imagens da comunidade.')
@@ -416,6 +432,7 @@ export async function loadCampaignWorkspace(campaignId: string): Promise<Campaig
   privateData.npcs = npcs
   const workspace: CampaignWorkspace = {
     ...privateData,
+    miraculousRules,
     categories: rows(categoryResult.data).map(categoryFromRow),
     media,
     notes: rows(notesResult.data).map(noteFromRow),
@@ -451,6 +468,11 @@ export async function saveCampaignWorkspace(campaignId: string, before: Campaign
     throw new Error('Participantes entram por convite. Use o código da campanha para adicioná-los.')
   }
   const client = requireSupabase()
+  if (JSON.stringify(before.miraculousRules) !== JSON.stringify(after.miraculousRules)) {
+    const rules = normalizeMiraculousRules(after.miraculousRules)
+    const { error } = await client.from('rpg_campaign_miraculous').upsert({ campaign_id: campaignId, rules }, { onConflict: 'campaign_id' })
+    if (error) throw problem(error, 'Somente o mestre pode alterar os Miraculous da mesa.')
+  }
   const categories = changed(before.categories, after.categories)
   const media = changed(before.media, after.media)
   const notes = changed(before.notes, after.notes)
@@ -471,45 +493,21 @@ export async function saveCampaignWorkspace(campaignId: string, before: Campaign
   for (const item of media.added) {
     const { error } = await client.from('rpg_campaign_media').insert({ id: item.id, campaign_id: campaignId,
       title: item.title, subtitle: item.subtitle, description: item.description, shared: item.shared,
-      category_id: item.categoryId || null, media_type: item.type || 'image',
-      media_url: item.mediaPath ? null : item.mediaUrl?.startsWith('https://') ? item.mediaUrl : null })
-    if (error) throw problem(error, 'Não foi possível adicionar a imagem da campanha.')
-    try {
-      const upload = await uploadMediaDataUrl(campaignId, item.id, item.imageDataUrl)
-      if (upload) {
-        const { error: updateError } = await client.from('rpg_campaign_media').update({ image_path: upload.path, media_type: upload.type })
-          .eq('campaign_id', campaignId).eq('id', item.id)
-        if (updateError) {
-          await client.storage.from(mediaBucket).remove([upload.path])
-          throw problem(updateError, 'Não foi possível salvar o arquivo da comunidade.')
-        }
-        applyUploadedMedia(item, upload)
-      }
-    } catch (cause) {
-      await client.from('rpg_campaign_media').delete().eq('id', item.id).eq('campaign_id', campaignId)
-      throw cause
-    }
+      category_id: item.categoryId || null, media_type: item.type || 'image' })
+    if (error) throw problem(error, 'Não foi possível adicionar a publicação da campanha.')
+    try { await persistMediaRecord(campaignId, item) }
+    catch (cause) { await client.from('rpg_campaign_media').delete().eq('id', item.id).eq('campaign_id', campaignId); throw cause }
   }
   for (const item of media.edited) {
-    const upload = await uploadMediaDataUrl(campaignId, item.id, item.imageDataUrl)
-    const { error } = await client.from('rpg_campaign_media').update({ title: item.title, subtitle: item.subtitle,
-      description: item.description, shared: item.shared, category_id: item.categoryId || null,
-      media_type: upload?.type || item.type || 'image',
-      ...(upload ? { image_path: upload.path, media_url: null } : {}) })
-      .eq('id', item.id).eq('campaign_id', campaignId)
-    if (error && upload) await client.storage.from(mediaBucket).remove([upload.path])
-    if (error) throw problem(error, 'Não foi possível atualizar a imagem da campanha.')
-    if (upload) {
-      const old = before.media.find(entry => entry.id === item.id)
-      if (old?.mediaPath) await client.storage.from(mediaBucket).remove([old.mediaPath])
-      applyUploadedMedia(item, upload)
-    }
+    const old = before.media.find(entry => entry.id === item.id)
+    await persistMediaRecord(campaignId, item)
+    const kept = new Set(mediaAttachments(item).map(file => file.path))
+    await cleanupFilesAfterDeletion(mediaBucket, old ? mediaAttachments(old).flatMap(file => file.path && !kept.has(file.path) ? [file.path] : []) : [])
   }
   for (const item of media.removed) {
     const { error } = await client.from('rpg_campaign_media').delete().eq('id', item.id).eq('campaign_id', campaignId)
-    if (error) throw problem(error, 'Não foi possível remover a imagem da campanha.')
-    // A publicação deve desaparecer mesmo se a limpeza posterior do arquivo falhar.
-    if (item.mediaPath) await client.storage.from(mediaBucket).remove([item.mediaPath])
+    if (error) throw problem(error, 'Não foi possível remover a publicação da campanha.')
+    await cleanupFilesAfterDeletion(mediaBucket, mediaAttachments(item).flatMap(file => file.path ? [file.path] : []))
   }
   for (const item of notes.added) {
     const { error } = await client.from('rpg_campaign_notes').insert({ id: item.id, campaign_id: campaignId,
@@ -578,9 +576,13 @@ function mediaType(file: Blob): CampaignMedia['type'] {
 async function uploadMediaFile(campaignId: string, mediaId: string, file: Blob): Promise<{ path: string; url: string; type: CampaignMedia['type'] }> {
   const limit = file.type.startsWith('video/') ? 20 * 1048576 : 5 * 1048576
   const ext = validUpload(file, mediaExtensions, limit)
-  const { data: campaign, error: campaignError } = await requireSupabase().from('rpg_campaigns').select('owner_id').eq('id', campaignId).single()
-  if (campaignError || !campaign) throw problem(campaignError, 'Mesa não encontrada para receber o arquivo.')
-  const path = `${string(object(campaign).owner_id)}/${campaignId}/${mediaId}/${crypto.randomUUID()}.${ext}`
+  let ownerId = campaignOwnerCache.get(campaignId)
+  if (!ownerId) {
+    const { data: campaign, error } = await requireSupabase().from('rpg_campaigns').select('owner_id').eq('id', campaignId).single()
+    if (error || !campaign) throw problem(error, 'Mesa não encontrada para receber o arquivo.')
+    ownerId = string(object(campaign).owner_id); campaignOwnerCache.set(campaignId, ownerId)
+  }
+  const path = `${ownerId}/${campaignId}/${mediaId}/${crypto.randomUUID()}.${ext}`
   const bucket = requireSupabase().storage.from(mediaBucket)
   const { error } = await bucket.upload(path, file, { contentType: file.type, upsert: false })
   if (error) throw problem(error, 'Não foi possível anexar o arquivo à comunidade.')
@@ -588,15 +590,45 @@ async function uploadMediaFile(campaignId: string, mediaId: string, file: Blob):
   return { path, url: data?.signedUrl ?? '', type: mediaType(file) }
 }
 
-async function uploadMediaDataUrl(campaignId: string, mediaId: string, value?: string) {
-  return value?.startsWith('data:') ? uploadMediaFile(campaignId, mediaId, await blobFromDataUrl(value)) : null
+async function persistMediaRecord(campaignId: string, item: CampaignMedia): Promise<void> {
+  const attachments = mediaAttachments(item)
+  if (attachments.length > 8) throw new Error('Cada publicação aceita até oito arquivos.')
+  const uploaded: string[] = []
+  try {
+    const persistent: MediaAttachment[] = []
+    for (const file of attachments) {
+      if (file.url?.startsWith('data:')) {
+        const blob = await blobFromDataUrl(file.url)
+        const issue = attachmentIssue([blob])
+        if (issue) throw new Error(issue)
+        const result = await uploadMediaFile(campaignId, item.id, blob)
+        uploaded.push(result.path)
+        persistent.push({ id: file.id, name: file.name.slice(0,255), type: result.type as MediaAttachment['type'], path: result.path, url: result.url })
+      } else persistent.push(file)
+    }
+    const first = persistent[0]
+    const { error } = await requireSupabase().from('rpg_campaign_media').update({ title: item.title, subtitle: item.subtitle,
+      description: item.description, shared: item.shared, category_id: item.categoryId || null,
+      attachments: persistent.filter(file => file.path).map(({ url: _url, ...file }) => file),
+      image_path: first?.path ?? null, media_type: first?.type ?? item.type ?? 'image', media_url: first?.path ? null : first?.url ?? null })
+      .eq('id', item.id).eq('campaign_id', campaignId).select('id').single()
+    if (error) throw problem(error, 'Não foi possível salvar os anexos da publicação.')
+    item.attachments = persistent; item.mediaPath = first?.path; item.mediaUrl = first?.url
+    item.type = first?.type ?? item.type; item.imageDataUrl = first?.type === 'video' ? undefined : first?.url
+  } catch (cause) { await cleanupFilesAfterDeletion(mediaBucket, uploaded); throw cause }
 }
 
-function applyUploadedMedia(item: CampaignMedia, upload: { path: string; url: string; type: CampaignMedia['type'] }) {
-  item.mediaPath = upload.path
-  item.mediaUrl = upload.url
-  item.type = upload.type
-  item.imageDataUrl = upload.type === 'video' ? undefined : upload.url
+async function uploadPostFiles(campaignId: string, postId: string, files: File[]): Promise<MediaAttachment[]> {
+  const issue = attachmentIssue(files)
+  if (issue) throw new Error(issue)
+  const uploaded: MediaAttachment[] = []
+  try {
+    for (const file of files) {
+      const result = await uploadMediaFile(campaignId, postId, file)
+      uploaded.push({ id: crypto.randomUUID(), name: file.name.slice(0,255), type: result.type as MediaAttachment['type'], path: result.path, url: result.url })
+    }
+    return uploaded
+  } catch (cause) { await cleanupFilesAfterDeletion(mediaBucket, uploaded.flatMap(file => file.path ? [file.path] : [])); throw cause }
 }
 
 export async function editCampaignMessage(campaignId: string, messageId: string, body: string): Promise<CampaignMessage> {
@@ -616,6 +648,8 @@ export interface CommunityPostInput {
   body: string
   categoryId?: string | null
   file?: File
+  files?: File[]
+  retainedAttachmentIds?: string[]
   mediaType?: CampaignMedia['type']
   mediaUrl?: string
 }
@@ -624,6 +658,9 @@ export async function createCommunityPost(campaignId: string, input: CommunityPo
   const client = requireSupabase()
   const currentUserId = await userId()
   const title = input.title.trim()
+  const files = input.files ?? (input.file ? [input.file] : [])
+  const issue = attachmentIssue(files)
+  if (issue) throw new Error(issue)
   if (!title || title.length > 120) throw new Error('Dê um título de até 120 caracteres à publicação.')
   if (input.kind === 'note') {
     const { data, error } = await client.from('rpg_campaign_notes').insert({ campaign_id: campaignId, author_id: currentUserId,
@@ -634,30 +671,27 @@ export async function createCommunityPost(campaignId: string, input: CommunityPo
   }
   const { data, error } = await client.from('rpg_campaign_media').insert({ campaign_id: campaignId, author_id: currentUserId,
     title, subtitle: '', description: input.body, category_id: input.categoryId || null,
-    media_type: input.mediaType || (input.file ? mediaType(input.file) : 'text'),
+    media_type: input.mediaType || (files[0] ? mediaType(files[0]) : 'text'),
     media_url: input.mediaUrl || null, shared: true })
-    .select('id,title,subtitle,description,image_path,media_url,media_type,category_id,author_id,shared').single()
+    .select(mediaColumns).single()
   if (error || !data) throw problem(error, 'Não foi possível criar a publicação.')
   const post = mediaFromRow(object(data))
-  if (!input.file) return post
+  if (!files.length) return post
+  let uploads: MediaAttachment[] = []
   try {
-    const upload = await uploadMediaFile(campaignId, post.id, input.file)
-    const { error: updateError } = await client.from('rpg_campaign_media').update({ image_path: upload.path, media_type: upload.type })
-      .eq('id', post.id).eq('campaign_id', campaignId)
-    if (updateError) {
-      await client.storage.from(mediaBucket).remove([upload.path])
-      throw problem(updateError, 'Não foi possível vincular o arquivo à publicação.')
-    }
-    applyUploadedMedia(post, upload)
+    uploads = await uploadPostFiles(campaignId, post.id, files)
+    post.attachments = uploads
+    await persistMediaRecord(campaignId, post)
     return post
   } catch (cause) {
+    await cleanupFilesAfterDeletion(mediaBucket, uploads.flatMap(file => file.path ? [file.path] : []))
     await client.from('rpg_campaign_media').delete().eq('id', post.id).eq('campaign_id', campaignId)
     throw cause
   }
 }
 
 export async function editCommunityPost(campaignId: string, kind: 'media' | 'note', id: string,
-  changes: { title: string; body: string; categoryId?: string | null; file?: File }): Promise<CampaignMedia | CampaignNote> {
+  changes: { title: string; body: string; categoryId?: string | null; file?: File; files?: File[]; retainedAttachmentIds?: string[] }): Promise<CampaignMedia | CampaignNote> {
   const client = requireSupabase()
   const title = changes.title.trim()
   if (!title || title.length > 120) throw new Error('Dê um título de até 120 caracteres à publicação.')
@@ -668,20 +702,21 @@ export async function editCommunityPost(campaignId: string, kind: 'media' | 'not
     if (error || !data) throw problem(error, 'Somente o autor ou mestre pode editar esta publicação.')
     return noteFromRow(object(data))
   }
-  const { data: oldRow, error: oldError } = await client.from('rpg_campaign_media').select('image_path')
-    .eq('campaign_id', campaignId).eq('id', id).single()
-  if (oldError || !oldRow) throw problem(oldError, 'Publicação não encontrada.')
-  const upload = changes.file ? await uploadMediaFile(campaignId, id, changes.file) : null
-  const { data, error } = await client.from('rpg_campaign_media').update({ title, description: changes.body,
-    category_id: changes.categoryId || null, ...(upload ? { image_path: upload.path, media_type: upload.type, media_url: null } : {}) })
-    .eq('campaign_id', campaignId).eq('id', id)
-    .select('id,title,subtitle,description,image_path,media_url,media_type,category_id,author_id,shared').single()
-  if (error || !data) {
-    if (upload) await client.storage.from(mediaBucket).remove([upload.path])
-    throw problem(error, 'Somente o autor ou mestre pode editar esta publicação.')
-  }
-  if (upload && oldRow.image_path) await client.storage.from(mediaBucket).remove([oldRow.image_path])
-  return (await hydrateMedia([mediaFromRow(object(data))]))[0]
+  const { data, error } = await client.from('rpg_campaign_media').select(mediaColumns).eq('campaign_id', campaignId).eq('id', id).single()
+  if (error || !data) throw problem(error, 'Publicação não encontrada.')
+  const old = mediaFromRow(object(data))
+  const original = mediaAttachments(old)
+  const kept = changes.retainedAttachmentIds ? original.filter(file => changes.retainedAttachmentIds!.includes(file.id)) : original
+  const files = changes.files ?? (changes.file ? [changes.file] : [])
+  const issue = attachmentIssue(files, kept.length)
+  if (issue) throw new Error(issue)
+  const uploads = await uploadPostFiles(campaignId, id, files)
+  const post = { ...old, title, description: changes.body, categoryId: changes.categoryId, attachments: [...kept, ...uploads] }
+  try { await persistMediaRecord(campaignId, post) }
+  catch (cause) { await cleanupFilesAfterDeletion(mediaBucket, uploads.flatMap(file => file.path ? [file.path] : [])); throw cause }
+  const paths = new Set(post.attachments.map(file => file.path))
+  await cleanupFilesAfterDeletion(mediaBucket, original.flatMap(file => file.path && !paths.has(file.path) ? [file.path] : []))
+  return (await hydrateMedia([post]))[0]
 }
 
 export async function loadCampaignRolls(campaignId: string): Promise<CampaignRoll[]> {
@@ -717,7 +752,7 @@ export function subscribeCampaign(campaignId: string, onChange: (table: string) 
   const client = requireSupabase()
   const channel = client.channel(`rpg-campaign-${campaignId}-${crypto.randomUUID()}`)
   for (const table of ['rpg_campaign_messages', 'rpg_campaign_media', 'rpg_campaign_notes',
-    'rpg_campaign_categories', 'rpg_campaign_rolls', 'rpg_campaign_master_data', 'rpg_sheets']) {
+    'rpg_campaign_categories', 'rpg_campaign_rolls', 'rpg_campaign_master_data', 'rpg_campaign_miraculous', 'rpg_sheets']) {
     channel.on('postgres_changes', { event: '*', schema: 'public', table,
       filter: `campaign_id=eq.${campaignId}` }, () => onChange(table))
   }
@@ -753,9 +788,9 @@ export async function deleteCampaign(campaignId: string): Promise<void> {
   const client = requireSupabase()
   const { data: campaign, error: campaignError } = await client.from('rpg_campaigns').select('owner_id').eq('id', campaignId).single()
   if (campaignError || !campaign || campaign.owner_id !== currentUserId) throw new Error('Apenas o mestre pode excluir esta mesa.')
-  const { data: mediaData, error: readError } = await client.from('rpg_campaign_media').select('image_path').eq('campaign_id', campaignId)
+  const { data: mediaData, error: readError } = await client.from('rpg_campaign_media').select('image_path,attachments').eq('campaign_id', campaignId)
   if (readError) throw problem(readError, 'Não foi possível verificar os arquivos da mesa.')
-  const paths = rows(mediaData).map(row => string(row.image_path)).filter(Boolean)
+  const paths = rows(mediaData).flatMap(row => [string(row.image_path), ...rows(row.attachments).map(file => string(file.path))]).filter(Boolean)
   const { data: masterData, error: masterReadError } = await client.from('rpg_campaign_master_data').select('data')
     .eq('campaign_id', campaignId).maybeSingle()
   if (masterReadError) throw problem(masterReadError, 'Não foi possível verificar as imagens dos NPCs.')

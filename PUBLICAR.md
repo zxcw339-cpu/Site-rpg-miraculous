@@ -1,5 +1,15 @@
 # Publicação do site
 
+## Atualização de 05/10/2026 — formas, anexos e celular
+
+A aba **Miraculous** permite ao mestre vetar transformações na mesa inteira ou em fichas individuais e cadastrar formas próprias. Os bônus continuam salvos ao vetar uma forma. A transformação muda a aparência da ficha; retornar ao civil restaura o tema escolhido. Formas que ainda não têm arte própria usam uma paleta discreta.
+
+Publicações de mídia aceitam até oito arquivos: PNG, JPG, WebP e GIF até 5 MB por arquivo; MP4 e WebM até 20 MB. A edição preserva os anexos mantidos e permite adicionar ou retirar arquivos individualmente. Conhecimento e Ofício têm especialidades editáveis, inclusive na identificação das rolagens. Os controles da Comunidade ficaram mais compactos no celular, dando mais espaço ao Mural e ao Chat.
+
+A migração [202610050001_miraculous_and_attachments.sql](supabase/migrations/202610050001_miraculous_and_attachments.sql) **já foi aplicada e verificada no Supabase**, preservando os dados existentes. Não é necessário executá-la de novo. A validação local passou em 40 testes de aplicação, 115 verificações SQL isoladas e build de produção.
+
+Para conferir após a publicação, abra uma mesa como mestre e procure a aba Miraculous. Vete uma forma para uma ficha de teste, confirme que ela desaparece do menu de transformação e depois libere novamente. Publique PNG e JPG juntos e confira as duas imagens após recarregar. Faça esses testes com dados descartáveis.
+
 ## Correção de acesso, cadastro e convites — 25/09/2026
 
 A migração aditiva [202609250002_rpg_identity_invites.sql](supabase/migrations/202609250002_rpg_identity_invites.sql) já foi aplicada ao projeto hospedado `MiraculousRPGDB`, com retorno **Success**. Ela corrige a exclusão de mesas que contêm fichas de jogadores e acrescenta um código de convite permanente de seis dígitos. Os convites antigos de 32 caracteres continuam aceitos. A conferência após a aplicação mostrou 3 mesas, 3 fichas e 10 mensagens preservadas, com 3 códigos curtos distintos. **Não execute esta migração novamente.**
