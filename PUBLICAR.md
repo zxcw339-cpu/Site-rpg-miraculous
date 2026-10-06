@@ -1,5 +1,11 @@
 # Publicação do site
 
+## Atualização de 05/10/2026 — imagens dos itens
+
+Cada item do inventário civil e da caixa de um Miraculous aceita uma imagem PNG, JPG ou WebP de até 5 MB. A ficha mostra miniatura e ampliação; permite trocar ou remover a imagem e preserva o arquivo ao mover o item pelo Vínculo. Salve a ficha após a edição. O jogador edita apenas os itens civis; os itens de cada forma continuam configurados pelo mestre. A publicação usa o fluxo automático do GitHub Pages após o envio à branch `main`.
+
+Os arquivos usam o armazenamento privado existente das fichas e dos NPCs. O banco recebe somente os caminhos, sem imagens embutidas ou links temporários. A reabertura gera os links de visualização. A substituição, remoção e exclusão da ficha incluem a limpeza dos arquivos antigos; a troca de vínculo preserva imagens ainda referenciadas. **Não exige migração nem alteração no Supabase.** Passaram 50 testes de aplicação, 124 verificações SQL isoladas e build de produção. PNG e JPG, ampliação, salvamento/reabertura, separação civil/Corvo e permissões da interface foram conferidos na prévia.
+
 ## Atualização de 05/10/2026 — caixas de itens e habilidades
 
 Cada ficha tem uma caixa de itens e habilidades por Miraculous, configurada exclusivamente pelo mestre. O jogador pode adicionar itens apenas ao inventário civil. Os recursos exclusivos da forma ficam ocultos ao retornar ao civil ou escolher outro Miraculous, sem serem apagados. O campo Vínculo do mestre move recursos existentes sem duplicá-los. A publicação desta atualização usa o fluxo automático do GitHub Pages após o envio à branch `main`.

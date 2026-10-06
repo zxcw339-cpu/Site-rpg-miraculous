@@ -8,6 +8,7 @@ import { normalizeInviteCode } from '../invite-code'
 import { emptyMiraculousRules, normalizeMiraculousRules, type MiraculousRules } from '../miraculous-model'
 import { attachmentIssue, mediaAttachments } from '../media-model'
 import type { MediaAttachment } from '../campaign-model'
+import { hydrateItemImages, itemImagePaths, persistItemImages } from '../item-images'
 
 type Row = Record<string, unknown>
 
@@ -96,17 +97,17 @@ async function hydrateSheets(sheets: CharacterSheet[]): Promise<CharacterSheet[]
   return sheets.map(sheet => {
     if (!sheet.details) return sheet
     const details = sheet.details
-    return { ...sheet, details: {
+    return { ...sheet, details: hydrateItemImages({
       ...details,
       portraitDataUrl: details.portraitPath ? signed.get(details.portraitPath) || undefined : details.portraitDataUrl,
       appearanceImages: details.appearanceImages.map(image => ({ ...image, dataUrl: image.path ? signed.get(image.path) || '' : image.dataUrl })),
-    } }
+    }, signed) }
   })
 }
 
 function characterImagePaths(details?: SheetDetails): string[] {
   if (!details) return []
-  return [details.portraitPath, ...details.appearanceImages.map(image => image.path)]
+  return [details.portraitPath, ...details.appearanceImages.map(image => image.path), ...itemImagePaths(details)]
     .filter((path): path is string => Boolean(path))
 }
 
@@ -116,17 +117,17 @@ async function hydrateNpcs(npcs: CampaignNpc[]): Promise<CampaignNpc[]> {
   return npcs.map(npc => {
     if (!npc.details) return npc
     const details = normalizeSheetDetails(npc.details)
-    return { ...npc, details: {
+    return { ...npc, details: hydrateItemImages({
       ...details,
       portraitDataUrl: details.portraitPath ? signed.get(details.portraitPath) || undefined : details.portraitDataUrl,
       appearanceImages: details.appearanceImages.map(image => ({
         ...image, dataUrl: image.path ? signed.get(image.path) || '' : image.dataUrl,
       })),
-    } }
+    }, signed) }
   })
 }
 
-async function persistCharacterImages(bucketName: string, prefix: string, details: SheetDetails): Promise<{ details: SheetDetails; uploaded: string[] }> {
+async function persistCharacterImages(bucketName: string, prefix: string, details: SheetDetails, includeForms = true): Promise<{ details: SheetDetails; uploaded: string[] }> {
   const persistent: SheetDetails = structuredClone(details)
   const uploaded: string[] = []
   const bucket = requireSupabase().storage.from(bucketName)
@@ -153,7 +154,15 @@ async function persistCharacterImages(bucketName: string, prefix: string, detail
       appearance.push({ ...item, path, dataUrl: '' })
     }
     persistent.appearanceImages = appearance
-    for (const path of [persistent.portraitPath, ...persistent.appearanceImages.map(item => item.path)]) {
+    const uploadItem = async (path: string, image: Blob) => {
+      const { error } = await bucket.upload(path, image, { contentType: image.type, upsert: false })
+      if (error) throw problem(error, 'Não foi possível enviar a imagem do item. Tente salvar novamente.')
+    }
+    persistent.inventory = await persistItemImages(persistent.inventory, prefix, uploadItem, uploaded)
+    if (includeForms) for (const form of persistent.forms) {
+      form.inventory = await persistItemImages(form.inventory ?? [], prefix, uploadItem, uploaded)
+    }
+    for (const path of characterImagePaths(includeForms ? persistent : { ...persistent, forms: [] })) {
       if (path && !path.startsWith(`${prefix}/`)) throw new Error('Uma imagem da ficha não pertence a esta ficha.')
     }
     return { details: persistent, uploaded }
@@ -173,12 +182,12 @@ function noInlineImages(value: unknown) {
 function civilDetails(details: SheetDetails) {
   const issue = validateSheetDetails(details)
   if (issue) throw new Error(issue)
-  noInlineImages(details)
   // The database keeps master-assigned transformation data in a separate row.
   // Players cannot change it by sending a crafted civil sheet update.
   const { forms: _forms, abilities: _abilities, ...civil } = details
   void _forms
   void _abilities
+  noInlineImages(civil)
   return civil
 }
 
@@ -286,7 +295,7 @@ export async function saveSheet(sheetId: string, name: string, details: SheetDet
   await userId()
   const { data: ownership, error: ownershipError } = await requireSupabase().from('rpg_sheets').select('owner_id,details').eq('id', sheetId).single()
   if (ownershipError || !ownership) throw problem(ownershipError, 'Ficha não encontrada.')
-  const stored = await persistCharacterImages(sheetBucket, `${string(object(ownership).owner_id)}/${sheetId}`, details)
+  const stored = await persistCharacterImages(sheetBucket, `${string(object(ownership).owner_id)}/${sheetId}`, details, false)
   let saved: Row
   try {
     const civil = civilDetails(stored.details)
@@ -298,8 +307,9 @@ export async function saveSheet(sheetId: string, name: string, details: SheetDet
     throw error
   }
   const old = normalizeSheetDetails(object(object(ownership).details))
-  const oldPaths = [old.portraitPath, ...old.appearanceImages.map(image => image.path)].filter((path): path is string => Boolean(path))
-  const newPaths = new Set([stored.details.portraitPath, ...stored.details.appearanceImages.map(image => image.path)].filter(Boolean))
+  const oldPaths = characterImagePaths(old)
+  // Keep civil images moved to a form until the master's overlay is saved.
+  const newPaths = new Set(characterImagePaths(stored.details))
   const removed = oldPaths.filter(path => !newPaths.has(path))
   if (removed.length) await requireSupabase().storage.from(sheetBucket).remove(removed)
   const overlays = await loadOverlays([sheetId])
@@ -323,10 +333,29 @@ export async function linkSheet(sheetId: string, campaignId: string | null): Pro
   return hydrateSheet(sheetFromRow(object(data), overlays.get(sheetId)))
 }
 
-export async function saveMasterSheetData(sheetId: string, forms: FormGrants[], abilities: SheetDetails['abilities']): Promise<void> {
+export async function saveMasterSheetData(sheetId: string, forms: FormGrants[], abilities: SheetDetails['abilities']): Promise<FormGrants[]> {
   await userId()
-  const { error } = await requireSupabase().from('rpg_sheet_master_data').upsert({ sheet_id: sheetId, forms, abilities }, { onConflict: 'sheet_id' })
-  if (error) throw problem(error, 'Não foi possível salvar os bônus, itens e habilidades desta ficha.')
+  const client = requireSupabase()
+  const { data: sheet, error: readError } = await client.from('rpg_sheets').select('owner_id,details').eq('id', sheetId).single()
+  if (readError || !sheet) throw problem(readError, 'Ficha não encontrada.')
+  const previous = await loadOverlays([sheetId])
+  const details = { ...emptySheetDetails(), forms, abilities }
+  const issue = validateSheetDetails(details)
+  if (issue) throw new Error(issue)
+  const stored = await persistCharacterImages(sheetBucket, `${string(sheet.owner_id)}/${sheetId}`, details)
+  try {
+    noInlineImages(stored.details)
+    const { error } = await client.from('rpg_sheet_master_data').upsert({ sheet_id: sheetId, forms: stored.details.forms, abilities }, { onConflict: 'sheet_id' })
+    if (error) throw problem(error, 'Não foi possível salvar os bônus, itens e habilidades desta ficha.')
+  } catch (cause) {
+    await cleanupFilesAfterDeletion(sheetBucket, stored.uploaded)
+    throw cause
+  }
+  const old = normalizeSheetDetails({ forms: previous.get(sheetId)?.forms as FormGrants[] | undefined })
+  const retained = new Set([...itemImagePaths(stored.details), ...characterImagePaths(normalizeSheetDetails(object(sheet.details)))])
+  await cleanupFilesAfterDeletion(sheetBucket, itemImagePaths(old).filter(path => !retained.has(path)))
+  const signed = await signedUrls(sheetBucket, itemImagePaths(stored.details))
+  return hydrateItemImages(stored.details, signed).forms
 }
 
 export async function loadMiraculousRules(campaignId: string): Promise<MiraculousRules> {
@@ -777,7 +806,8 @@ export async function deleteSheet(sheetId: string): Promise<void> {
   if (readError || !existing) throw problem(readError, 'Ficha não encontrada.')
   if (existing.owner_id !== currentUserId) throw new Error('Somente o dono pode excluir esta ficha.')
   const details = normalizeSheetDetails(object(object(existing).details))
-  const paths = [details.portraitPath, ...details.appearanceImages.map(image => image.path)].filter((path): path is string => Boolean(path))
+  const overlays = await loadOverlays([sheetId])
+  const paths = characterImagePaths(normalizeSheetDetails({ ...details, forms: overlays.get(sheetId)?.forms as FormGrants[] | undefined }))
   const { data, error } = await client.from('rpg_sheets').delete().eq('id', sheetId).select('id').single()
   if (error || !data) throw problem(error, 'Não foi possível excluir a ficha.')
   await cleanupFilesAfterDeletion(sheetBucket, paths)

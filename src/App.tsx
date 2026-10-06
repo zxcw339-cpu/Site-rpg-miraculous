@@ -437,8 +437,8 @@ export default function App() {
               if (persisted) {
                 try {
                   const updated = await saveSheetAsMaster(member.sheetId!, name, details)
-                  await saveMasterSheetData(member.sheetId!, details.forms, details.abilities)
-                  canonical = { ...updated.details!, forms: details.forms, abilities: details.abilities }
+                  const forms = await saveMasterSheetData(member.sheetId!, details.forms, details.abilities)
+                  canonical = { ...updated.details!, forms, abilities: details.abilities }
                 }
                 finally { setWorkspaceRevision(current => current + 1) }
               }

@@ -39,7 +39,7 @@ export type SheetForm = 'civil' | FormId
 export interface SheetRoll { dice: number[]; bonus: number; total: number }
 type Amount = number | null
 
-export interface SheetItem { id: string; name: string; notes: string }
+export interface SheetItem { id: string; name: string; notes: string; imageDataUrl?: string; imagePath?: string }
 export interface SheetAbility { id: string; kind: AbilityKind; name: string; description: string }
 export interface FormResources { inventory: SheetItem[]; abilities: SheetAbility[] }
 
@@ -206,6 +206,8 @@ export function validateSheetDetails(details: SheetDetails): string | null {
       if (ability.name.length > 80 || ability.description.length > 1200) return 'As habilidades do Miraculous aceitam nome de até 80 caracteres e descrição de até 1200.'
     }
   }
-  if (new TextEncoder().encode(JSON.stringify(details.forms)).length > 65536) return 'As caixas dos Miraculous desta ficha estão muito grandes. Reduza os detalhes antes de salvar.'
+  // Previews and signed URLs are transient; only storage paths enter the JSON.
+  const storedForms = details.forms.map(form => ({ ...form, inventory: form.inventory?.map(({ imageDataUrl: _preview, ...item }) => item) }))
+  if (new TextEncoder().encode(JSON.stringify(storedForms)).length > 65536) return 'As caixas dos Miraculous desta ficha estão muito grandes. Reduza os detalhes antes de salvar.'
   return null
 }
